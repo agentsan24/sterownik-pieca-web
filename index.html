@@ -532,7 +532,7 @@
     <script>
         // MQTT Configuration
         const MQTT_BROKER_DEFAULT = "broker.emqx.io";
-        const MQTT_PORT_DEFAULT = 8083; // Use WebSocket port for browser MQTT client
+        const MQTT_PORT_DEFAULT = 8084; // Use WebSocket port for browser MQTT client
         const MQTT_USER_DEFAULT = "agentsan007";
         const MQTT_PASS_DEFAULT = "Sanders24*"; // Hasło używane również do resetowania danych
 
@@ -575,7 +575,7 @@
             const username = mqttUsernameInput.value;
             const password = mqttPasswordInput.value;
 
-            const mqttUrl = `ws://${broker}:${port}/mqtt`; // Construct WebSocket URL
+            const mqttUrl = `wss://${broker}:${port}/mqtt`; // Construct WebSocket URL
             console.log(`Attempting to connect to MQTT broker: ${mqttUrl}`);
 
             mqttClient = mqtt.connect(mqttUrl, {
