@@ -415,7 +415,7 @@
                         <div class="zoom-btn" id="zoom-out">-</div>
                         <div class="zoom-btn reset" id="zoom-reset">Reset</div>
                     </div>
-                    <canvas id="temperature-chart" width="611" height="270" style="display: block; box-sizing: border-box; height: 270px; width: 611px;"></canvas>
+                    <canvas id="temperature-chart" width="611" height="270" style="display: block; box-sizing: border-box; height: 270px; width="611"></canvas>
                 </div>
 
                 <div class="chart-container" id="chart-container-consumption" style="display: none;">
@@ -1657,50 +1657,3 @@
     </script>
 </body>
 </html>
-```
-
-Rozumiem. Przeanalizowałem zrzuty ekranu, które mi przesłałeś.
-
-**Zrzut `image_0a9a44.jpg` (MQTTX):**
-To najważniejszy zrzut. Wyraźnie widać, że MQTTX **odbiera pełne pakiety JSON** z tematu `pellet/boiler/state`. To znaczy, że **ESP32 wysyła dane do brokera EMQX PRAWIDŁOWO**. W pakiecie JSON jest też `power:"OFF"`.
-
-**Zrzut `image_0ddf9f.jpg` (Strona webowa):**
-Strona pokazuje `Połączono z brokerem` i `Subskrybowano: pellet/boiler/state`. To oznacza, że **strona webowa łączy się z brokerem i próbuję subskrybować temat.**
-
-### Podsumowanie sytuacji:
-
-* **ESP32 działa:** Wysyła prawidłowe dane JSON do brokera.
-* **Broker EMQX działa:** Odbiera dane od ESP32 i przekazuje je (co widać w MQTTX).
-* **Strona webowa łączy się z brokerem i subskrybuje temat.**
-* **Problem:** Strona webowa **nie aktualizuje interfejsu (kolor przycisku, temperatury, IP)**, mimo że powinna odbierać dane.
-
-### Dlaczego przycisk nie zmienia koloru (i UI się nie aktualizuje):
-
-Wskazany przez Ciebie objaw ("przycisk nie zmienia koloru") jest kluczowy. Kolor przycisku zmienia się w funkcji `updateUI()` w Twoim pliku `index.html`, na podstawie pola `data.power` otrzymanego w pakiecie MQTT. Jeśli kolor się nie zmienia, oznacza to, że funkcja `updateUI()` albo nie jest wywoływana, albo nie otrzymuje poprawnych danych, albo niepoprawnie aktualizuje element.
-
-Ponieważ `updateUI` jest wywoływane w bloku `client.on('message')` po sparsowaniu JSON (`JSON.parse(msgString)`), problemem jest najprawdopodobniej to, że **wiadomości MQTT nie docierają do funkcji `client.on('message')` w przeglądarce**, mimo że połączenie WebSocket wygląda na nawiązane.
-
-### Co teraz musimy sprawdzić (to jest klucz do rozwiązania):
-
-Musimy dokładnie zobaczyć, czy przeglądarka odbiera wiadomości MQTT na poziomie sieci.
-
-1.  **Upewnij się, że masz wgraną NAJNOWSZĄ wersję pliku `index.html` na GitHubie.** Jest to wersja z Canvasa "Poprawiony index.html - Finalna Wersja".
-2.  **Upewnij się, że na Twoim ESP32 jest wgrany ostatni, poprawiony kod** (z Canvasa "Poprawiony kod ESP32 (Naprawiono błąd parsowania JSON dla komend ON/OFF i temperatury)").
-3.  **Otwórz stronę webową z GitHuba w przeglądarce.**
-4.  **Otwórz Konsolę Deweloperską (F12).**
-5.  Przejdź do zakładki **`Network` (Sieć)**.
-6.  **Wymuś pełne odświeżenie strony** (`Ctrl + Shift + R` lub `Cmd + Shift + R`).
-7.  W panelu `Network`, w polu filtru, wpisz `WS` (aby filtrować tylko połączenia WebSocket) lub wybierz kategorię `WS`.
-8.  Powinien pojawić się wpis dla połączenia WebSocket, np. `wss://broker.emqx.io:8084/mqtt`. **Kliknij na ten wpis.**
-9.  Przejdź do zakładki **`Messages` (Wiadomości)**.
-10. **Obserwuj tę zakładkę bardzo uważnie.**
-
-    * **Czy widzisz tam strumień przychodzących wiadomości (`Incoming` lub `Receive`)?**
-    * **Czy te wiadomości zawierają pełne pakiety JSON**, takie jak te, które widziałeś w MQTTX?
-
-### Co mi powiesz na podstawie tego testu w zakładce `Network -> Messages`?
-
-* **Jeśli WIDZISZ pełne pakiety JSON w `Network -> Messages`:** Oznacza to, że dane **DOCIERAJĄ** do przeglądarki. Problem leży wtedy w tym, że funkcja `updateUI()` w `index.html` nie aktualizuje poprawnie koloru przycisku lub innych elementów UI. Wtedy będę musiał bardzo dokładnie przeanalizować tę funkcję pod kątem błędów logiki.
-* **Jeśli NIE WIDZISZ pełnych pakietów JSON w `Network -> Messages` (tylko np. wiadomości o nawiązaniu połączenia, ale brak strumienia danych):** Oznacza to, że dane nie docierają do przeglądarki przez WebSocket, mimo nawiązania połączenia. Wtedy problem może leżeć po stronie publicznego brokera (niestabilność darmowych instancji, opóźnienia, czy blokowanie wiadomości) lub po stronie Twojej sieci/firewalla/rozszerzeń przeglądarki, które blokują strumień danych WebSocket.
-
-Czekam na wynik tego testu. Jest to kluczowa informacja, która pozwoli nam iść dal
