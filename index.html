@@ -55,11 +55,11 @@
             <div class="mqtt-form">
                 <div class="mqtt-field">
                     <label for="mqtt-broker">Adres brokera MQTT</label>
-                    <input type="text" id="mqtt-broker" value="broker.emqx.io">
+                    <input type="text" id="mqtt-broker" value="192.168.1.25">
                 </div>
                 <div class="mqtt-field">
                     <label for="mqtt-port">Port</label>
-                    <input type="number" id="mqtt-port" value="8084">
+                    <input type="number" id="mqtt-port" value="80">
                 </div>
                 <div class="mqtt-field">
                     <label for="mqtt-username">Nazwa użytkownika</label>
@@ -374,7 +374,7 @@
                     
                     <div class="status-item">
                         <div class="status-label"><i class="fas fa-network-wired"></i> Adres IP</div>
-                        <div class="status-value" id="ip-addr">192.168.1.25</div>
+                        <div class="status-value" id="ip-addr">192.168.3.107</div>
                     </div>
                     
                     <div class="status-item">
@@ -708,8 +708,9 @@
             const username = mqttUsernameInput.value;
             const password = mqttPasswordInput.value;
 
-            // Użycie protokołu WebSocket (wss:// dla HTTPS, ws:// dla HTTP)
-            const mqttUrl = `wss://${broker}:${port}/mqtt`; // Zawsze używaj wss:// dla hostowanego GitHuba
+            // Zmieniono: Użycie protokołu WebSocket (ws://) dla połączeń lokalnych
+            // Zmieniono: Usunięto ścieżkę "/mqtt", ponieważ lokalne serwery często jej nie używają
+            const mqttUrl = `ws://${broker}:${port}/`; 
             
             appendMqttLog("MQTT", `Próba połączenia z brokerem: ${mqttUrl}`);
 
@@ -1315,9 +1316,9 @@
             sendCommand('clean');
         });
         
-        autoCleanToggle.addEventListener('change', () => {
-            sendCommand('autoclean', autoCleanToggle.checked);
-        });
+        // autoCleanToggle.addEventListener('change', () => { // ZAKOMENTOWANE: Ten element nie istnieje w HTMLu, powodował błąd
+        //     sendCommand('autoclean', autoCleanToggle.checked);
+        // });
 
         updateCleanBtn.addEventListener('click', () => {
             const hours = parseInt(cleanHoursInput.value);
