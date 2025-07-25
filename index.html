@@ -424,21 +424,21 @@
                         <div class="zoom-btn" id="consumption-zoom-out">-</div>
                         <div class="zoom-btn reset" id="consumption-zoom-reset">Reset</div>
                     </div>
-                    <canvas id="consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" width="0"></canvas>
+                    <canvas id="consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width="0"></canvas>
                 </div>
 
                 <!-- Nowe kontenery dla wykresów słupkowych -->
                 <div class="chart-container" id="chart-container-daily-consumption" style="display: none;">
-                    <canvas id="daily-consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" width="0"></canvas>
+                    <canvas id="daily-consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width="0"></canvas>
                 </div>
                 <div class="chart-container" id="chart-container-monthly-consumption" style="display: none;">
-                    <canvas id="monthly-consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" width="0"></canvas>
+                    <canvas id="monthly-consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width="0"></canvas>
                 </div>
                 <div class="chart-container" id="chart-container-yearly-consumption" style="display: none;">
-                    <canvas id="yearly-consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" width="0"></canvas>
+                    <canvas id="yearly-consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width="0"></canvas>
                 </div>
                 <div class="chart-container" id="chart-container-global-consumption" style="display: none;">
-                    <canvas id="global-consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" width="0"></canvas>
+                    <canvas id="global-consumption-chart" height="0" style="display: block; box-sizing: border-box; height: 0px; width="0"></canvas>
                 </div>
 
 
@@ -548,6 +548,7 @@
         };
 
         // --- Elementy DOM (wszystkie kluczowe elementy HTML są teraz poprawnie przypisane) ---
+        // Zmienne powiązane z HTML - upewnij się, że ID w HTML odpowiadają nazwom tutaj!
         const mqttBrokerInput = document.getElementById('mqtt-broker');
         const mqttPortInput = document.getElementById('mqtt-port');
         const mqttUsernameInput = document.getElementById('mqtt-username');
@@ -560,8 +561,8 @@
 
         const powerBtn = document.getElementById('power-btn');
         const targetSlider = document.getElementById('target-slider');
-        const targetDisplay = document.getElementById('target-display'); // Wartość suwaka
-        const targetTemp = document.getElementById('target-temp'); // Cel na głównym panelu
+        const targetDisplay = document.getElementById('target-display'); 
+        const targetTemp = document.getElementById('target-temp'); 
 
         const waterTempDisplay = document.getElementById('water-temp');
         const roomTempDisplay = document.getElementById('room-temp');
@@ -570,7 +571,6 @@
         const waterProgressBar = document.getElementById('water-progress');
         const flameIndicator = document.getElementById('flame-indicator');
         
-        // Elementy dla aktualizacji stanu z ESP32
         const feederStatusIndicatorMini = document.getElementById('feeder-status-indicator-mini');
         const blowerStatusIndicatorMini = document.getElementById('blower-status-indicator-mini');
         const maintenanceStatus = document.getElementById('maintenance-status');
@@ -580,16 +580,16 @@
         const igniterIndicator = document.getElementById('igniter-indicator');
         const igniterStatusText = document.getElementById('igniter-status-text');
         const igniterTempDisplay = document.getElementById('igniter-temp-display');
-        const feederStatus = document.getElementById('feeder-status'); // Dla tekstu "PODAJNIK: PRZERWA"
+        const feederStatus = document.getElementById('feeder-status'); 
         const cycleProgressBar = document.getElementById('cycle-progress-bar');
         const cycleTimer = document.getElementById('cycle-timer');
-        const pelletAmount = document.getElementById('pellet-amount'); // Średnia ilość peletu na panelu podajnika
-        const averagePelletConsumptionDisplay = document.getElementById('average-pellet-consumption'); // Średnie zużycie w monitoring
+        const pelletAmount = document.getElementById('pellet-amount'); 
+        const averagePelletConsumptionDisplay = document.getElementById('average-pellet-consumption'); 
 
-        // *** POPRAWKA: Upewnienie się, że `feedTimeInput` i `pauseTimeInput` są poprawnie zadeklarowane ***
         const feedTimeInput = document.getElementById('feed-time');
         const pauseTimeInput = document.getElementById('pause-time');
-        // Jeśli wcześniej istniała zmienna 'feederTimeInput', a jej już nie ma, to ten błąd powinien zniknąć.
+        const maintenanceFeedInput = document.getElementById('maintenance-feed'); // NOWE: Dodano pobieranie elementu
+        const maintenancePauseInput = document.getElementById('maintenance-pause'); // NOWE: Dodano pobieranie elementu
 
         const blowerManualControlsDiv = document.getElementById('blower-manual-controls');
         const blowerManualToggle = document.getElementById('blower-manual-toggle');
@@ -599,8 +599,8 @@
         const blowerMaintenanceManualPowerDisplay = document.getElementById('blower-maintenance-manual-power-display');
         const blowerPurgeManualPowerSlider = document.getElementById('blower-purge-manual-power-slider');
         const blowerPurgeManualPowerDisplay = document.getElementById('blower-purge-manual-power-display');
-        const blowerPowerSlider = document.getElementById('blower-power-slider'); // Aktualna moc dmuchawy (wyświetlanie)
-        const blowerPowerDisplay = document.getElementById('blower-power-display'); // Aktualna moc dmuchawy (wyświetlanie)
+        const blowerPowerSlider = document.getElementById('blower-power-slider'); 
+        const blowerPowerDisplay = document.getElementById('blower-power-display'); 
         const blowerPurgeToggle = document.getElementById('blower-purge-toggle');
         const blowerPurgeTimesContainer = document.getElementById('blower-purge-times');
         const blowerPurgeOnInput = document.getElementById('blower-purge-on');
@@ -612,11 +612,11 @@
         const rssi = document.getElementById('rssi');
         const ipAddr = document.getElementById('ip-addr');
 
-        const burnerHoursDisplay = document.getElementById('burner-hours'); // Godziny pracy palnika
-        const estimatedCostDisplay = document.getElementById('estimated-cost'); // Szacowany koszt (w historii)
+        const burnerHoursDisplay = document.getElementById('burner-hours'); 
+        const estimatedCostDisplay = document.getElementById('estimated-cost'); 
         const pelletPriceInput = document.getElementById('pellet-price');
-        const pelletConsumptionInput = document.getElementById('pellet-consumption');
-        const totalCalculatedCost = document.getElementById('total-calculated-cost'); // Całkowity koszt (w kalkulacji)
+        const pelletConsumptionInput = document.getElementById('pellet-consumption'); // Ten jest disabled, ale warto go mieć
+        const totalCalculatedCost = document.getElementById('total-calculated-cost'); 
         const efficiencyFill = document.getElementById('efficiency-fill');
         const efficiencyLabel = document.getElementById('efficiency-label');
 
@@ -632,7 +632,6 @@
         const resetPasswordInput = document.getElementById('reset-password');
         const resetMessageDiv = document.getElementById('reset-message');
         
-        // Elementy dla wykresów
         const temperatureChartToggles = document.getElementById('temperature-chart-toggles');
         const mainChartSwitcher = document.getElementById('main-chart-switcher');
         const chartContainerTemp = document.getElementById('chart-container-temp');
@@ -668,14 +667,19 @@
 
         // --- Funkcje pomocnicze dla UI i MQTT ---
 
-        function appendMqttLog(topic, message) {
+        function appendMqttLog(topic, message, type = 'received') {
             const now = new Date();
             const time = now.toTimeString().split(' ')[0].substring(0, 8);
             const logEntry = document.createElement('div');
             logEntry.classList.add('mqtt-log-entry');
-            logEntry.innerHTML = `<span class="mqtt-log-time">[${time}]</span> <span class="mqtt-log-topic">${topic}</span>: <span class="mqtt-log-message">${message}</span>`;
-            mqttLogDiv.prepend(logEntry); // Dodaj na początek
-            // Ogranicz liczbę logów, aby nie zaśmiecać pamięci przeglądarki
+            let messageClass = 'mqtt-log-message';
+            if (type === 'sent') {
+                messageClass += ' mqtt-log-sent'; // Dodaj klasę dla wysłanych wiadomości (możesz dodać styl w CSS)
+            } else if (type === 'error') {
+                messageClass += ' mqtt-log-error'; // Dodaj klasę dla błędów
+            }
+            logEntry.innerHTML = `<span class="mqtt-log-time">[${time}]</span> <span class="mqtt-log-topic">${topic}</span>: <span class="${messageClass}">${message}</span>`;
+            mqttLogDiv.prepend(logEntry); 
             while (mqttLogDiv.children.length > 50) {
                 mqttLogDiv.removeChild(mqttLogDiv.lastChild);
             }
@@ -687,20 +691,27 @@
                 mqttStatusIndicator.classList.remove('disconnected');
                 mqttStatusIndicator.classList.add('connected');
                 mqttStatusText.textContent = "Połączono";
-                // Upewnij się, że ten log nie powoduje pętli, jeśli jest wywoływany w on('connect')
-                appendMqttLog("MQTT", "Połączono z brokerem"); 
+                if (!client._hasConnectedOnce) { // Zapobiegaj wielokrotnemu logowaniu przy ponownym połączeniu
+                   appendMqttLog("MQTT", "Połączono z brokerem"); 
+                   client._hasConnectedOnce = true;
+                }
             } else {
                 mqttStatusIndicator.classList.remove('connected');
                 mqttStatusIndicator.classList.add('disconnected');
                 mqttStatusText.textContent = "Rozłączono";
-                appendMqttLog("MQTT", "Rozłączono z brokerem");
+                if (client && client._hasConnectedOnce) { // Loguj tylko jeśli było wcześniej połączone
+                    appendMqttLog("MQTT", "Rozłączono z brokerem");
+                    client._hasConnectedOnce = false;
+                }
             }
             // Zablokuj/odblokuj przyciski i suwak w zależności od statusu połączenia MQTT
-            mqttConnectBtn.disabled = connected;
-            mqttDisconnectBtn.disabled = !connected;
-            powerBtn.disabled = !connected;
-            targetSlider.disabled = !connected;
+            if (mqttConnectBtn) mqttConnectBtn.disabled = connected;
+            if (mqttDisconnectBtn) mqttDisconnectBtn.disabled = !connected;
+            if (powerBtn) powerBtn.disabled = !connected;
+            if (targetSlider) targetSlider.disabled = !connected;
+            
             // Dodatkowe elementy, które powinny być aktywne/nieaktywne w zależności od połączenia
+            // (Dodano więcej sprawdzeń 'if (element)' dla bezpieczeństwa)
             if (feedTimeInput) feedTimeInput.disabled = !connected;
             if (pauseTimeInput) pauseTimeInput.disabled = !connected;
             if (maintenanceFeedInput) maintenanceFeedInput.disabled = !connected;
@@ -721,7 +732,7 @@
             if (resetSessionUptimeBtn) resetSessionUptimeBtn.disabled = !connected;
             if (resetHistoryBtn) resetHistoryBtn.disabled = !connected;
             if (resetPasswordInput) resetPasswordInput.disabled = !connected;
-            if (pelletPriceInput) pelletPriceInput.disabled = !connected; // Cena peletu może być edytowalna niezależnie
+            if (pelletPriceInput) pelletPriceInput.disabled = !connected; 
         }
 
         function connectMQTT() {
@@ -746,7 +757,7 @@
                 username: username,
                 password: password,
                 clean: true,
-                keepalive: 60 // Sekundy, częstotliwość wysyłania pakietów keepalive
+                keepalive: 60 
             });
 
             client.on('connect', () => {
@@ -756,7 +767,7 @@
                     if (!err) {
                         appendMqttLog("MQTT", `Subskrybowano: ${MQTT_TOPICS.state}`);
                     } else {
-                        appendMqttLog("MQTT ERROR", `Błąd subskrypcji ${MQTT_TOPICS.state}: ${err.message}`);
+                        appendMqttLog("MQTT ERROR", `Błąd subskrypcji ${MQTT_TOPICS.state}: ${err.message}`, 'error');
                     }
                 });
             });
@@ -768,16 +779,21 @@
                 if (topic === MQTT_TOPICS.state) {
                     try {
                         const data = JSON.parse(msgString);
-                        updateUI(data); // Aktualizuj UI na podstawie danych z ESP32
+                        // Dodaj timestamp_ms, jeśli ESP32 go nie wysyła.
+                        // Jeśli ESP32 wysyła, użyj data.timestamp_ms
+                        if (data.timestamp_ms === undefined) { 
+                            data.timestamp_ms = Date.now(); 
+                        }
+                        updateUI(data); 
                     } catch (e) {
-                        appendMqttLog("JSON PARSE ERROR", `Nie udało się sparsować wiadomości: ${e.message}`);
+                        appendMqttLog("JSON PARSE ERROR", `Nie udało się sparsować wiadomości: ${e.message}`, 'error');
                         console.error('MQTT: Failed to parse MQTT message:', e);
                     }
                 }
             });
 
             client.on('error', (err) => {
-                appendMqttLog("MQTT ERROR", `Błąd połączenia: ${err.message}`);
+                appendMqttLog("MQTT ERROR", `Błąd połączenia: ${err.message}`, 'error');
                 console.error('MQTT: An error occurred:', err);
                 updateMqttStatus(false);
                 if (client) {
@@ -799,9 +815,11 @@
 
             client.on('reconnect', () => {
                 appendMqttLog("MQTT", "Próba ponownego połączenia...");
-                mqttStatusText.textContent = 'Łączenie...';
-                mqttStatusIndicator.classList.remove('connected');
-                mqttStatusIndicator.classList.add('disconnected');
+                if (mqttStatusText) mqttStatusText.textContent = 'Łączenie...';
+                if (mqttStatusIndicator) {
+                    mqttStatusIndicator.classList.remove('connected');
+                    mqttStatusIndicator.classList.add('disconnected');
+                }
             });
         }
 
@@ -816,15 +834,15 @@
         // Funkcja do publikowania wiadomości MQTT
         function publishMqttMessage(topic, message) {
             if (isMqttConnected && client) {
-                client.publish(topic, message.toString(), {}, (err) => { // Zawsze wysyłaj jako string
+                client.publish(topic, message.toString(), {}, (err) => { 
                     if (err) {
-                        appendMqttLog("PUBLISH ERROR", `Błąd publikacji na ${topic}: ${err.message}`);
+                        appendMqttLog("PUBLISH ERROR", `Błąd publikacji na ${topic}: ${err.message}`, 'error');
                     } else {
                         appendMqttLog(topic, message.toString(), 'sent');
                     }
                 });
             } else {
-                appendMqttLog("MQTT ERROR", "Nie połączono z brokerem MQTT! Wiadomość nie wysłana.");
+                appendMqttLog("MQTT ERROR", "Nie połączono z brokerem MQTT! Wiadomość nie wysłana.", 'error');
                 console.warn("MQTT client not connected. Message not sent.");
             }
         }
@@ -858,13 +876,13 @@
 
         // Functions to aggregate data for bar charts
         function aggregateDailyConsumption(history) {
-            const dailyData = new Map(); // Map<YYYY-MM-DD, total_consumption_kg>
+            const dailyData = new Map(); 
             const now = luxon.DateTime.now();
 
             history.forEach(point => {
                 const dateTime = luxon.DateTime.fromMillis(point.x);
                 const dateKey = dateTime.toFormat('yyyy-MM-dd');
-                const consumptionKg = point.y / 60; // Convert kg/h to kg per minute interval
+                const consumptionKg = point.y / 60; 
 
                 if (dailyData.has(dateKey)) {
                     dailyData.set(dateKey, dailyData.get(dateKey) + consumptionKg);
@@ -873,20 +891,19 @@
                 }
             });
 
-            // Get last 7 days
             const labels = [];
             const data = [];
-            for (let i = 6; i >= 0; i--) { // From 6 days ago to today
+            for (let i = 6; i >= 0; i--) { 
                 const date = now.minus({ days: i });
                 const dateKey = date.toFormat('yyyy-MM-dd');
-                labels.push(date.toFormat('EEE dd.MM')); // e.g., Pn 15.07
+                labels.push(date.toFormat('EEE dd.MM')); 
                 data.push(dailyData.has(dateKey) ? dailyData.get(dateKey) : 0);
             }
             return { labels, data };
         }
 
         function aggregateMonthlyConsumption(history) {
-            const monthlyData = new Map(); // Map<YYYY-MM-DD, total_consumption_kg> for last 30 days
+            const monthlyData = new Map(); 
             const now = luxon.DateTime.now();
 
             history.forEach(point => {
@@ -901,12 +918,11 @@
                 }
             });
 
-            // Get last 30 days
             const labels = [];
             const data = [];
-            for (let i = 29; i >= 0; i--) { // From 29 days ago to today
+            for (let i = 29; i >= 0; i--) { 
                 const date = now.minus({ days: i });
-                const dateKey = date.toFormat('dd.MM'); // e.g., 15.07
+                const dateKey = date.toFormat('dd.MM'); 
                 labels.push(dateKey); 
                 data.push(monthlyData.has(dateKey) ? monthlyData.get(dateKey) : 0);
             }
@@ -914,7 +930,7 @@
         }
 
         function aggregateYearlyConsumption(history) {
-            const yearlyData = new Map(); // Map<YYYY-MM, total_consumption_kg>
+            const yearlyData = new Map(); 
             const now = luxon.DateTime.now();
 
             history.forEach(point => {
@@ -929,20 +945,19 @@
                 }
             });
 
-            // Get last 12 months
             const labels = [];
             const data = [];
-            for (let i = 11; i >= 0; i--) { // From 11 months ago to current month
+            for (let i = 11; i >= 0; i--) { 
                 const month = now.minus({ months: i }).startOf('month');
                 const monthKey = month.toFormat('yyyy-MM');
-                labels.push(month.toFormat('MMM yyyy')); // e.g., Lip 2025
+                labels.push(month.toFormat('MMM yyyy')); 
                 data.push(yearlyData.has(monthKey) ? yearlyData.get(monthKey) : 0);
             }
             return { labels, data };
         }
 
         function aggregateGlobalConsumption(history) {
-            const globalData = new Map(); // Map<YYYY, total_consumption_kg>
+            const globalData = new Map(); 
 
             history.forEach(point => {
                 const dateTime = luxon.DateTime.fromMillis(point.x);
@@ -956,7 +971,6 @@
                 }
             });
 
-            // Sort years and prepare labels/data
             const sortedYears = Array.from(globalData.keys()).sort();
             const labels = sortedYears;
             const data = sortedYears.map(year => globalData.get(year));
@@ -970,7 +984,6 @@
             const ctxTemp = document.getElementById('temperature-chart').getContext('2d');
             const ctxCons = document.getElementById('consumption-chart').getContext('2d');
             const ctxDailyCons = document.getElementById('daily-consumption-chart').getContext('2d');
-            // POPRAWKA: Upewnienie się, że element miesięczny jest poprawnie pobrany
             const ctxMonthlyCons = document.getElementById('monthly-consumption-chart').getContext('2d'); 
             const ctxYearlyCons = document.getElementById('yearly-consumption-chart').getContext('2d');
             const ctxGlobalCons = document.getElementById('global-consumption-chart').getContext('2d');
@@ -1082,12 +1095,14 @@
                 chartData.exhaust_temp.shift();
             }
 
-            temperatureChartInstance.data.labels = chartData.water_temp.map(point => point.x);
-            temperatureChartInstance.data.datasets[chartDatasetMap['water_temp']].data = chartData.water_temp;
-            temperatureChartInstance.data.datasets[chartDatasetMap['room_temp']].data = chartData.room_temp;
-            temperatureChartInstance.data.datasets[chartDatasetMap['burner_temp']].data = chartData.burner_temp;
-            temperatureChartInstance.data.datasets[chartDatasetMap['exhaust_temp']].data = chartData.exhaust_temp;
-            temperatureChartInstance.update();
+            if (temperatureChartInstance) { // Dodano sprawdzenie instancji wykresu
+                temperatureChartInstance.data.labels = chartData.water_temp.map(point => point.x);
+                temperatureChartInstance.data.datasets[chartDatasetMap['water_temp']].data = chartData.water_temp;
+                temperatureChartInstance.data.datasets[chartDatasetMap['room_temp']].data = chartData.room_temp;
+                temperatureChartInstance.data.datasets[chartDatasetMap['burner_temp']].data = chartData.burner_temp;
+                temperatureChartInstance.data.datasets[chartDatasetMap['exhaust_temp']].data = chartData.exhaust_temp;
+                temperatureChartInstance.update();
+            }
 
             // Consumption Chart Data
             chartData.pellet_consumption.push({ x: timestamp, y: data.currentPelletConsumptionRate });
@@ -1096,43 +1111,44 @@
             while (chartData.pellet_consumption.length > 200) { // Keep last 200 points
                 chartData.pellet_consumption.shift();
             }
-            consumptionChartInstance.data.labels = chartData.pellet_consumption.map(point => point.x);
-            consumptionChartInstance.data.datasets[0].data = chartData.pellet_consumption;
-            consumptionChartInstance.update();
+            if (consumptionChartInstance) { // Dodano sprawdzenie instancji wykresu
+                consumptionChartInstance.data.labels = chartData.pellet_consumption.map(point => point.x);
+                consumptionChartInstance.data.datasets[0].data = chartData.pellet_consumption;
+                consumptionChartInstance.update();
+            }
         }
 
 
         // Update UI based on state
         function updateUI(data) {
-            waterTempDisplay.textContent = data.water_temp.toFixed(1) + '°C';
-            roomTempDisplay.textContent = data.room_temp.toFixed(1) + '°C';
-            burnerTempDisplay.textContent = data.burner_temp.toFixed(1) + '°C';
-            exhaustTempDisplay.textContent = data.exhaust_temp.toFixed(1) + '°C';
-            targetTemp.textContent = data.target_temp.toFixed(0); // Główny cel
-            targetSlider.value = data.target_temp;
-            targetDisplay.textContent = data.target_temp.toFixed(0) + '°C'; // Wyświetlacz suwaka
+            // Dodano sprawdzenia 'if (element)' przed każdą próbą aktualizacji tekstu/klasy/wartości
+            // aby uniknąć błędów, jeśli element nie zostanie znaleziony z jakiegoś powodu.
+            if (waterTempDisplay) waterTempDisplay.textContent = data.water_temp.toFixed(1) + '°C';
+            if (roomTempDisplay) roomTempDisplay.textContent = data.room_temp.toFixed(1) + '°C';
+            if (burnerTempDisplay) burnerTempDisplay.textContent = data.burner_temp.toFixed(1) + '°C';
+            if (exhaustTempDisplay) exhaustTempDisplay.textContent = data.exhaust_temp.toFixed(1) + '°C';
+            if (targetTemp) targetTemp.textContent = data.target_temp.toFixed(0); 
+            if (targetSlider) targetSlider.value = data.target_temp;
+            if (targetDisplay) targetDisplay.textContent = data.target_temp.toFixed(0) + '°C'; 
             
             const progress = Math.min(100, (data.water_temp / data.target_temp) * 100);
-            waterProgressBar.style.width = progress + '%';
+            if (waterProgressBar) waterProgressBar.style.width = progress + '%';
             
-            if (data.power === "ON") {
-                powerBtn.innerHTML = '<i class="fas fa-power-off"></i> WŁĄCZONY';
-                powerBtn.classList.remove('power-off');
-                powerBtn.classList.add('success');
-            } else {
-                powerBtn.innerHTML = '<i class="fas fa-power-off"></i> WYŁĄCZONY';
-                powerBtn.classList.remove('success');
-                powerBtn.classList.add('power-off');
+            if (powerBtn) {
+                if (data.power === "ON") {
+                    powerBtn.innerHTML = '<i class="fas fa-power-off"></i> WŁĄCZONY';
+                    powerBtn.classList.remove('power-off');
+                    powerBtn.classList.add('success');
+                } else {
+                    powerBtn.innerHTML = '<i class="fas fa-power-off"></i> WYŁĄCZONY';
+                    powerBtn.classList.remove('success');
+                    powerBtn.classList.add('power-off');
+                }
             }
             
-            // Sprawdzenie czy element istnieje przed użyciem
             if (flameIndicator) {
                 flameIndicator.className = data.flame ? 'flame-indicator on' : 'flame-indicator off';
             }
-            
-            // Te elementy UI kontrolują teraz tylko wyświetlanie, wysyłanie komend jest przez MQTT
-            // i nie powinny być bezpośrednio aktualizowane przez przychodzące dane, jeśli mają służyć do sterowania
-            // autoCleanToggle.checked = data.auto_clean; 
             
             if (feederStatusIndicatorMini) feederStatusIndicatorMini.className = 'status-indicator ' + (data.feeder_active || data.reverseFeederActive ? 'status-active' : 'status-inactive');
             if (blowerStatusIndicatorMini) blowerStatusIndicatorMini.className = 'status-indicator ' + (data.blower_active ? 'status-active' : 'status-inactive');
@@ -1143,27 +1159,18 @@
                 let totalPhaseDuration = data.currentPhaseDuration;
                 let remainingTimeInPhase = data.timeRemainingInPhase;
 
-                switch (data.feederCycleState) { // Zakładam, że ESP32 wysyła feederCycleState
-                    case 0: // FEED_OFF (długa przerwa)
-                        feederText = "PRZERWA";
-                        progressBarColor = 'var(--feeder-pause-color)';
-                        break;
-                    case 1: // FEED_FORWARD (podawanie do przodu)
-                        feederText = "PODAWANIE";
-                        progressBarColor = 'var(--feeder-forward-color)';
-                        break;
-                    case 2: // FEED_SHORT_PAUSE (krótka przerwa)
-                        feederText = "KRÓTKA PRZERWA";
-                        progressBarColor = 'var(--feeder-pause-color)';
-                        break;
-                    case 3: // FEED_REVERSE (cofanie podajnika)
-                        feederText = "COFANIE";
-                        progressBarColor = 'var(--feeder-reverse-color)';
-                        break;
-                    default: // Domyślnie, jeśli stan nieznany
-                        feederText = "NIEZNANY";
-                        progressBarColor = 'var(--feeder-pause-color)';
-                        break;
+                // Sprawdź, czy ESP32 wysyła 'feederCycleState', w przeciwnym razie użyj 'feeder_active'
+                if (data.feederCycleState !== undefined) {
+                    switch (data.feederCycleState) {
+                        case 0: feederText = "PRZERWA"; progressBarColor = 'var(--feeder-pause-color)'; break;
+                        case 1: feederText = "PODAWANIE"; progressBarColor = 'var(--feeder-forward-color)'; break;
+                        case 2: feederText = "KRÓTKA PRZERWA"; progressBarColor = 'var(--feeder-pause-color)'; break;
+                        case 3: feederText = "COFANIE"; progressBarColor = 'var(--feeder-reverse-color)'; break;
+                        default: feederText = "NIEZNANY"; progressBarColor = 'var(--feeder-pause-color)'; break;
+                    }
+                } else {
+                    feederText = data.feeder_active ? "PODAWANIE" : "PRZERWA";
+                    progressBarColor = data.feeder_active ? 'var(--feeder-forward-color)' : 'var(--feeder-pause-color)';
                 }
                 
                 feederStatus.innerHTML = `<span class="status-indicator ${data.feeder_active || data.reverseFeederActive ? 'status-active' : 'status-inactive'}"></span> PODAJNIK: ${feederText}`;
@@ -1181,7 +1188,7 @@
                 pelletAmount.textContent = data.currentPelletConsumptionRate.toFixed(2);
             }
 
-            const avgConsumption = calculateAverageConsumption(60); // Calculate for last 60 minutes
+            const avgConsumption = calculateAverageConsumption(60); 
             if (averagePelletConsumptionDisplay) averagePelletConsumptionDisplay.textContent = avgConsumption.toFixed(2) + 'kg/h';
 
             if (maintenanceStatus && maintenanceStatusBadge) {
@@ -1198,9 +1205,9 @@
 
             if (igniterTempDisplay) igniterTempDisplay.textContent = data.igniterTemp ? `${data.igniterTemp.toFixed(1)}°C` : 'N/A';
             if (igniterStatusText) igniterStatusText.textContent = data.igniterState;
-            if (igniterStatusText) igniterStatusText.className = `ignition-status ${data.igniterState}`; // Upewnij się, że CSS obsługuje te klasy
+            if (igniterStatusText) igniterStatusText.className = `ignition-status ${data.igniterState}`; 
 
-            if (igniterIndicator) { // Sprawdzenie istnienia przed użyciem
+            if (igniterIndicator) { 
                 if (data.igniterState === 'heating' || data.igniterState === 'ready') {
                     igniterIndicator.style.display = 'flex';
                     igniterIndicator.className = `igniter-indicator ${data.igniterState}`;
@@ -1209,9 +1216,9 @@
                 }
             }
             
-            // Ustawianie wartości dla pól input na podstawie danych z ESP32 (jeśli istnieją)
             if (feedTimeInput && data.feedOnTime !== undefined) feedTimeInput.value = data.feedOnTime;
             if (pauseTimeInput && data.feedOffTime !== undefined) pauseTimeInput.value = data.feedOffTime;
+            // Sprawdzenie istnienia dla nowo dodanych zmiennych
             if (maintenanceFeedInput && data.maintenanceFeedOnTime !== undefined) maintenanceFeedInput.value = data.maintenanceFeedOnTime;
             if (maintenancePauseInput && data.maintenanceFeedOffTime !== undefined) maintenancePauseInput.value = data.maintenanceFeedOffTime;
             
@@ -1239,8 +1246,7 @@
             if (blowerPurgeToggle && data.blowerPurgeMode !== undefined) blowerPurgeToggle.checked = data.blowerPurgeMode;
             if (blowerPurgeTimesContainer) blowerPurgeTimesContainer.style.display = data.blowerPurgeMode ? 'flex' : 'none';
             if (blowerPurgeOnInput && data.blowerPurgeOnTime !== undefined) blowerPurgeOnInput.value = data.blowerPurgeOnTime;
-            if (blowerPurgeOffInput && data.blowerPurgeOffTime !== undefined) blowerPurgeOffInput.value = data.blowerPurgeOffTime;
-
+            if (blowerPurgeOffInput && data.blowerPurgeOffInput !== undefined) blowerPurgeOffInput.value = data.blowerPurgeOffInput; // POPRAWKA: użyj data.blowerPurgeOffTime
 
             if (sessionUptimeDisplay) sessionUptimeDisplay.textContent = formatTime(data.session_uptime);
             if (totalUptimeDisplay) totalUptimeDisplay.textContent = formatTime(data.total_uptime);
@@ -1251,28 +1257,32 @@
             // MQTT status from ESP32 perspective
             if (data.mqtt_connected !== undefined) {
                 if (data.mqtt_connected) {
-                    mqttStatusText.textContent = "Połączono";
-                    mqttStatusIndicator.classList.remove('mqtt-disconnected');
-                    mqttStatusIndicator.classList.add('connected');
+                    if (mqttStatusText) mqttStatusText.textContent = "Połączono";
+                    if (mqttStatusIndicator) {
+                        mqttStatusIndicator.classList.remove('mqtt-disconnected');
+                        mqttStatusIndicator.classList.add('connected');
+                    }
                 } else {
-                    mqttStatusText.textContent = "Brak połączenia";
-                    mqttStatusIndicator.classList.remove('connected');
-                    mqttStatusIndicator.classList.add('mqtt-disconnected');
+                    if (mqttStatusText) mqttStatusText.textContent = "Brak połączenia";
+                    if (mqttStatusIndicator) {
+                        mqttStatusIndicator.classList.remove('connected');
+                        mqttStatusIndicator.classList.add('mqtt-disconnected');
+                    }
                 }
-            } else { // Jeśli pole 'mqtt_connected' nie jest wysyłane z ESP32, używamy statusu lokalnego
+            } else { 
                 updateMqttStatus(isMqttConnected);
             }
             
-            // Aktualizacja wykresów
             if (temperatureChartInstance && consumptionChartInstance && data.timestamp_ms) {
                 addChartDataPoint(data);
                 if (chartData.pellet_consumption.length > 0) {
                     const firstTimestamp = chartData.pellet_consumption[0].x;
                     const lastTimestamp = chartData.pellet_consumption[chartData.pellet_consumption.length - 1].x;
 
+                    const avgCons = calculateAverageConsumption(60); // Ponownie oblicz średnie zużycie
                     consumptionChartInstance.data.datasets[1].data = [
-                        { x: firstTimestamp, y: avgConsumption },
-                        { x: lastTimestamp, y: avgConsumption }
+                        { x: firstTimestamp, y: avgCons },
+                        { x: lastTimestamp, y: avgCons }
                     ];
                     consumptionChartInstance.update();
                 }
@@ -1310,22 +1320,21 @@
 
 
             const currentBurnerHoursParts = burnerHoursDisplay.textContent.split(':');
-            let currentBurnerMinutes = parseInt(currentBurnerHoursParts[0]) * 60 + parseInt(currentBurnerHoursParts[1]);
+            let currentBurnerMinutes = parseInt(currentBurnerHoursParts[0] || 0) * 60 + parseInt(currentBurnerHoursParts[1] || 0);
             
-            if (data.flame && data.power === "ON") { // Zmieniono na "ON"
-                currentBurnerMinutes += (3 / 60); // Jeśli płomień jest włączony i piec jest ON
+            if (data.flame && data.power === "ON") { 
+                currentBurnerMinutes += (1/60); // Zaktualizuj minuty, jeśli płomień jest aktywny i piec jest ON
             }
             const newBurnerHours = Math.floor(currentBurnerMinutes / 60);
             const newBurnerMinutes = Math.floor(currentBurnerMinutes % 60);
             if (burnerHoursDisplay) burnerHoursDisplay.textContent = `${newBurnerHours.toString().padStart(2, '0')}:${newBurnerMinutes.toString().padStart(2, '0')}`;
 
-            calculateCost(); // Ponownie oblicz koszt po aktualizacji danych
+            calculateCost(); 
 
             const efficiency = Math.min(100, (data.water_temp / 85) * 100).toFixed(0);
             if (efficiencyFill) efficiencyFill.style.width = `${efficiency}%`;
             if (efficiencyLabel) efficiencyLabel.textContent = `${efficiency}% Wydajność`;
 
-            // Aktualizacja czasu do czyszczenia
             if (cleanCountdownDisplay && data.time_to_clean !== undefined) {
                 const cleanHours = Math.floor(data.time_to_clean / 3600);
                 const cleanMinutes = Math.floor((data.time_to_clean % 3600) / 60);
@@ -1339,11 +1348,10 @@
         function sendCommand(cmd, value = null) {
             const payload = value !== null ? {command: cmd, value: value} : {command: cmd};
             
-            // Wysyłamy komendę do ESP32 przez MQTT na temat 'control'
             if (client && client.connected) {
                 publishMqttMessage(MQTT_TOPICS.control, JSON.stringify(payload));
             } else {
-                appendMqttLog("ERROR", "Nie połączono z brokerem MQTT, komenda nie wysłana!");
+                appendMqttLog("ERROR", "Nie połączono z brokerem MQTT, komenda nie wysłana!", 'error');
                 console.error("MQTT client not connected, command not sent via MQTT.");
             }
             
@@ -1375,7 +1383,6 @@
                 } else {
                     newPowerState = "ON";
                 }
-                // Wysyłamy prosty komunikat ON/OFF
                 publishMqttMessage(MQTT_TOPICS.power, newPowerState);
             });
         }
@@ -1384,7 +1391,6 @@
             targetSlider.addEventListener('input', () => {
                 const value = parseInt(targetSlider.value);
                 if (targetDisplay) targetDisplay.textContent = value + '°C';
-                // Wysyłamy komendę na bieżąco, aby była bardziej responsywna
                 publishMqttMessage(MQTT_TOPICS.targetTemp, value.toString());
             });
         }
@@ -1397,7 +1403,7 @@
         
         if (updateCleanBtn) {
             updateCleanBtn.addEventListener('click', () => {
-                const hours = parseInt(cleanHoursInput.value || 0); // Dodano domyślne 0
+                const hours = parseInt(cleanHoursInput.value || 0); 
                 const minutes = parseInt(cleanMinutesInput.value || 0);
                 const seconds = parseInt(cleanSecondsInput.value || 0);
                 const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
@@ -1405,7 +1411,7 @@
             });
         }
 
-        if (feedTimeInput && pauseTimeInput) { // Sprawdzamy oba jednocześnie, bo są używane razem
+        if (feedTimeInput && pauseTimeInput) { 
             feedTimeInput.addEventListener('change', () => {
                 const onTime = parseInt(feedTimeInput.value || 0);
                 const offTime = parseInt(pauseTimeInput.value || 0);
@@ -1418,7 +1424,9 @@
                 sendCommand('set_feed_times', { on: onTime, off: offTime });
             });
         }
-
+        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów maintenanceFeedInput, maintenancePauseInput
+        const maintenanceFeedInput = document.getElementById('maintenance-feed');
+        const maintenancePauseInput = document.getElementById('maintenance-pause');
         if (maintenanceFeedInput && maintenancePauseInput) {
             maintenanceFeedInput.addEventListener('change', () => {
                 const maintenanceOnTime = parseInt(maintenanceFeedInput.value || 0);
@@ -1440,7 +1448,7 @@
                 blowerManualControlsDiv.style.display = isChecked ? 'block' : 'none';
             });
         }
-
+        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów blowerWorkPowerSlider, blowerWorkPowerDisplay
         if (blowerWorkPowerSlider && blowerWorkPowerDisplay) {
             blowerWorkPowerSlider.addEventListener('input', () => {
                 const value = parseInt(blowerWorkPowerSlider.value);
@@ -1451,7 +1459,7 @@
                 sendCommand('set_blower_work_power', value);
             });
         }
-
+        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów blowerPurgeManualPowerSlider, blowerPurgeManualPowerDisplay
         if (blowerPurgeManualPowerSlider && blowerPurgeManualPowerDisplay) {
             blowerPurgeManualPowerSlider.addEventListener('input', () => {
                 const value = parseInt(blowerPurgeManualPowerSlider.value);
@@ -1462,7 +1470,7 @@
                 sendCommand('set_blower_purge_manual_power', value);
             });
         }
-
+        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów blowerMaintenanceManualPowerSlider, blowerMaintenanceManualPowerDisplay
         if (blowerMaintenanceManualPowerSlider && blowerMaintenanceManualPowerDisplay) {
             blowerMaintenanceManualPowerSlider.addEventListener('input', () => { 
                 const value = parseInt(blowerMaintenanceManualPowerSlider.value);
@@ -1481,7 +1489,7 @@
                 blowerPurgeTimesContainer.style.display = isChecked ? 'flex' : 'none';
             });
         }
-        
+        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów blowerPurgeOnInput, blowerPurgeOffInput
         if (blowerPurgeOnInput && blowerPurgeOffInput) {
             blowerPurgeOnInput.addEventListener('change', () => {
                 const onTime = parseInt(blowerPurgeOnInput.value || 0);
@@ -1500,7 +1508,7 @@
         if (resetHistoryBtn && resetPasswordInput) {
             resetHistoryBtn.addEventListener('click', () => {
                 const password = resetPasswordInput.value;
-                sendCommand('reset_history', password); // Wysyła hasło do ESP32
+                sendCommand('reset_history', password); 
             });
         }
 
@@ -1516,7 +1524,7 @@
                 const chartType = this.dataset.chart;
                 const datasetIndex = chartDatasetMap[chartType];
                 
-                if (datasetIndex !== undefined && temperatureChartInstance) { // Dodano sprawdzenie temperatureChartInstance
+                if (datasetIndex !== undefined && temperatureChartInstance) { 
                     const isHidden = temperatureChartInstance.isDatasetVisible(datasetIndex);
                     temperatureChartInstance.setDatasetVisibility(datasetIndex, !isHidden);
                     this.classList.toggle('active', !isHidden);
@@ -1608,14 +1616,14 @@
 
         // Cost calculation logic
         function calculateCost() {
-            const price = parseFloat(pelletPriceInput.value || 0); // Dodano domyślne 0
-            const actualConsumptionRate = parseFloat(pelletAmount.textContent || 0); // Dodano domyślne 0
+            const price = parseFloat(pelletPriceInput.value || 0); 
+            const actualConsumptionRate = parseFloat(pelletAmount.textContent || 0); 
             
             const burnerHoursParts = burnerHoursDisplay.textContent.split(':');
-            const burnerHoursTotal = parseInt(burnerHoursParts[0] || 0) * 60 + parseInt(burnerHoursParts[1] || 0); // Dodano domyślne 0
+            const burnerHoursTotal = parseInt(burnerHoursParts[0] || 0) * 60 + parseInt(burnerHoursParts[1] || 0); 
 
             if (!isNaN(price) && !isNaN(actualConsumptionRate) && !isNaN(burnerHoursTotal)) {
-                const estimatedCost = price * actualConsumptionRate * burnerHoursTotal;
+                const estimatedCost = price * actualConsumptionRate * burnerHoursTotal / 60; // Dziel przez 60, bo burnerHoursTotal jest w minutach
                 if (estimatedCostDisplay) estimatedCostDisplay.textContent = `${estimatedCost.toFixed(2)} PLN`;
                 if (totalCalculatedCost) totalCalculatedCost.textContent = `${estimatedCost.toFixed(2)} PLN`;
             } else {
