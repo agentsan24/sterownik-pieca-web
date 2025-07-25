@@ -535,1126 +535,1115 @@
     </div>
     
     <script>
-        // Globalne zmienne dla klienta MQTT i tematów
-        let client = null; 
-        let isMqttConnected = false;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Globalne zmienne dla klienta MQTT i tematów
+            let client = null; 
+            let isMqttConnected = false;
 
-        // Tematy MQTT - zgodne z tymi w kodzie ESP32
-        const MQTT_TOPICS = {
-            state: "pellet/boiler/state",
-            control: "pellet/boiler/control", // Dla komend JSON (np. {"command":"power"})
-            targetTemp: "pellet/boiler/target_temp", // Dla temperatury docelowej
-            power: "pellet/boiler/power" // Dla prostych komend ON/OFF
-        };
-
-        // --- Elementy DOM (wszystkie kluczowe elementy HTML są teraz poprawnie przypisane) ---
-        // Zmienne powiązane z HTML - upewnij się, że ID w HTML odpowiadają nazwom tutaj!
-        const mqttBrokerInput = document.getElementById('mqtt-broker');
-        const mqttPortInput = document.getElementById('mqtt-port');
-        const mqttUsernameInput = document.getElementById('mqtt-username');
-        const mqttPasswordInput = document.getElementById('mqtt-password');
-        const mqttConnectBtn = document.getElementById('mqtt-connect-btn');
-        const mqttDisconnectBtn = document.getElementById('mqtt-disconnect-btn');
-        const mqttStatusIndicator = document.getElementById('mqtt-status-indicator');
-        const mqttStatusText = document.getElementById('mqtt-status-text');
-        const mqttLogDiv = document.getElementById('mqtt-log');
-
-        const powerBtn = document.getElementById('power-btn');
-        const targetSlider = document.getElementById('target-slider');
-        const targetDisplay = document.getElementById('target-display'); 
-        const targetTemp = document.getElementById('target-temp'); 
-
-        const waterTempDisplay = document.getElementById('water-temp');
-        const roomTempDisplay = document.getElementById('room-temp');
-        const burnerTempDisplay = document.getElementById('burner-temp');
-        const exhaustTempDisplay = document.getElementById('exhaust-temp');
-        const waterProgressBar = document.getElementById('water-progress');
-        const flameIndicator = document.getElementById('flame-indicator');
-        
-        const feederStatusIndicatorMini = document.getElementById('feeder-status-indicator-mini');
-        const blowerStatusIndicatorMini = document.getElementById('blower-status-indicator-mini');
-        const maintenanceStatus = document.getElementById('maintenance-status');
-        const maintenanceStatusBadge = document.getElementById('maintenance-status-badge');
-        const ashCleaningStatus = document.getElementById('ash-cleaning-status');
-        const cleaningStatusBadge = document.getElementById('cleaning-status-badge');
-        const igniterIndicator = document.getElementById('igniter-indicator');
-        const igniterStatusText = document.getElementById('igniter-status-text');
-        const igniterTempDisplay = document.getElementById('igniter-temp-display');
-        const feederStatus = document.getElementById('feeder-status'); 
-        const cycleProgressBar = document.getElementById('cycle-progress-bar');
-        const cycleTimer = document.getElementById('cycle-timer');
-        const pelletAmount = document.getElementById('pellet-amount'); 
-        const averagePelletConsumptionDisplay = document.getElementById('average-pellet-consumption'); 
-
-        const feedTimeInput = document.getElementById('feed-time');
-        const pauseTimeInput = document.getElementById('pause-time');
-        const maintenanceFeedInput = document.getElementById('maintenance-feed'); 
-        const maintenancePauseInput = document.getElementById('maintenance-pause'); 
-
-        const blowerManualControlsDiv = document.getElementById('blower-manual-controls');
-        const blowerManualToggle = document.getElementById('blower-manual-toggle');
-        const blowerWorkPowerSlider = document.getElementById('blower-work-power-slider');
-        const blowerWorkPowerDisplay = document.getElementById('blower-work-power-display');
-        const blowerMaintenanceManualPowerSlider = document.getElementById('blower-maintenance-manual-power-slider');
-        const blowerMaintenanceManualPowerDisplay = document.getElementById('blower-maintenance-manual-power-display');
-        const blowerPurgeManualPowerSlider = document.getElementById('blower-purge-manual-power-slider');
-        const blowerPurgeManualPowerDisplay = document.getElementById('blower-purge-manual-power-display');
-        const blowerPowerSlider = document.getElementById('blower-power-slider'); 
-        const blowerPowerDisplay = document.getElementById('blower-power-display'); 
-        const blowerPurgeToggle = document.getElementById('blower-purge-toggle');
-        const blowerPurgeTimesContainer = document.getElementById('blower-purge-times');
-        const blowerPurgeOnInput = document.getElementById('blower-purge-on');
-        const blowerPurgeOffInput = document.getElementById('blower-purge-off');
-
-
-        const sessionUptimeDisplay = document.getElementById('session-uptime');
-        const totalUptimeDisplay = document.getElementById('total-uptime');
-        const rssi = document.getElementById('rssi');
-        const ipAddr = document.getElementById('ip-addr');
-
-        const burnerHoursDisplay = document.getElementById('burner-hours'); 
-        const estimatedCostDisplay = document.getElementById('estimated-cost'); 
-        const pelletPriceInput = document.getElementById('pellet-price');
-        const pelletConsumptionInput = document.getElementById('pellet-consumption'); 
-        const totalCalculatedCost = document.getElementById('total-calculated-cost'); 
-        const efficiencyFill = document.getElementById('efficiency-fill');
-        const efficiencyLabel = document.getElementById('efficiency-label');
-
-        const cleanHoursInput = document.getElementById('clean-hours');
-        const cleanMinutesInput = document.getElementById('clean-minutes');
-        const cleanSecondsInput = document.getElementById('clean-seconds');
-        const updateCleanBtn = document.getElementById('update-clean-btn');
-        const cleanCountdownDisplay = document.getElementById('clean-countdown-display');
-
-        const ashBtn = document.getElementById('ash-btn');
-        const resetSessionUptimeBtn = document.getElementById('reset-session-uptime-btn');
-        const resetHistoryBtn = document.getElementById('reset-history-btn');
-        const resetPasswordInput = document.getElementById('reset-password');
-        const resetMessageDiv = document.getElementById('reset-message');
-        
-        const temperatureChartToggles = document.getElementById('temperature-chart-toggles');
-        const mainChartSwitcher = document.getElementById('main-chart-switcher');
-        const chartContainerTemp = document.getElementById('chart-container-temp');
-        const chartContainerConsumption = document.getElementById('chart-container-consumption');
-        const chartContainerDailyConsumption = document.getElementById('chart-container-daily-consumption');
-        const chartContainerMonthlyConsumption = document.getElementById('monthly-consumption-chart'); // Corrected ID
-        const chartContainerYearlyConsumption = document.getElementById('chart-container-yearly-consumption');
-        const chartContainerGlobalConsumption = document.getElementById('global-consumption-chart');
-        const historyRangeButtons = document.querySelectorAll('.history-btn');
-
-
-        // Chart.js setup - Zmieniono nazwy zmiennych, aby nie kolidowały z nazwami funkcji
-        let temperatureChartInstance;
-        let consumptionChartInstance;
-        let dailyConsumptionChartInstance;
-        let monthlyConsumptionChartInstance;
-        let yearlyConsumptionChartInstance;
-        let globalConsumptionChartInstance;
-
-        const chartData = {
-            water_temp: [],
-            room_temp: [],
-            burner_temp: [],
-            exhaust_temp: [],
-            pellet_consumption: []
-        };
-        const chartDatasetMap = {
-            'water_temp': 0,
-            'room_temp': 1,
-            'burner_temp': 2,
-            'exhaust_temp': 3
-        };
-
-        // --- Funkcje pomocnicze dla UI i MQTT ---
-
-        function appendMqttLog(topic, message, type = 'received') {
-            const now = new Date();
-            const time = now.toTimeString().split(' ')[0].substring(0, 8);
-            const logEntry = document.createElement('div');
-            logEntry.classList.add('mqtt-log-entry');
-            let messageClass = 'mqtt-log-message';
-            if (type === 'sent') {
-                messageClass += ' mqtt-log-sent'; // Dodaj klasę dla wysłanych wiadomości (możesz dodać styl w CSS)
-            } else if (type === 'error') {
-                messageClass += ' mqtt-log-error'; // Dodaj klasę dla błędów
-            }
-            logEntry.innerHTML = `<span class="mqtt-log-time">[${time}]</span> <span class="mqtt-log-topic">${topic}</span>: <span class="${messageClass}">${message}</span>`;
-            mqttLogDiv.prepend(logEntry); 
-            while (mqttLogDiv.children.length > 50) {
-                mqttLogDiv.removeChild(mqttLogDiv.lastChild);
-            }
-        }
-
-        function updateMqttStatus(connected) {
-            isMqttConnected = connected;
-            if (connected) {
-                mqttStatusIndicator.classList.remove('disconnected');
-                mqttStatusIndicator.classList.add('connected');
-                mqttStatusText.textContent = "Połączono";
-                if (!client._hasConnectedOnce) { // Zapobiegaj wielokrotnemu logowaniu przy ponownym połączeniu
-                   appendMqttLog("MQTT", "Połączono z brokerem"); 
-                   client._hasConnectedOnce = true;
-                }
-            } else {
-                mqttStatusIndicator.classList.remove('connected');
-                mqttStatusIndicator.classList.add('disconnected');
-                mqttStatusText.textContent = "Rozłączono";
-                if (client && client._hasConnectedOnce) { // Loguj tylko jeśli było wcześniej połączone
-                    appendMqttLog("MQTT", "Rozłączono z brokerem");
-                    client._hasConnectedOnce = false;
-                }
-            }
-            // Zablokuj/odblokuj przyciski i suwak w zależności od statusu połączenia MQTT
-            if (mqttConnectBtn) mqttConnectBtn.disabled = connected;
-            if (mqttDisconnectBtn) mqttDisconnectBtn.disabled = !connected;
-            if (powerBtn) powerBtn.disabled = !connected;
-            if (targetSlider) targetSlider.disabled = !connected;
-            
-            // Dodatkowe elementy, które powinny być aktywne/nieaktywne w zależności od połączenia
-            // (Dodano więcej sprawdzeń 'if (element)' dla bezpieczeństwa)
-            if (feedTimeInput) feedTimeInput.disabled = !connected;
-            if (pauseTimeInput) pauseTimeInput.disabled = !connected;
-            if (maintenanceFeedInput) maintenanceFeedInput.disabled = !connected;
-            if (maintenancePauseInput) maintenancePauseInput.disabled = !connected;
-            if (blowerManualToggle) blowerManualToggle.disabled = !connected;
-            if (blowerWorkPowerSlider) blowerWorkPowerSlider.disabled = !connected;
-            if (blowerMaintenanceManualPowerSlider) blowerMaintenanceManualPowerSlider.disabled = !connected;
-            if (blowerPurgeManualPowerSlider) blowerPurgeManualPowerSlider.disabled = !connected;
-            if (blowerPurgeToggle) blowerPurgeToggle.disabled = !connected;
-            if (blowerPurgeOnInput) blowerPurgeOnInput.disabled = !connected;
-            if (blowerPurgeOffInput) blowerPurgeOffInput.disabled = !connected;
-            if (autoCleanToggle) autoCleanToggle.disabled = !connected;
-            if (ashBtn) ashBtn.disabled = !connected;
-            if (cleanHoursInput) cleanHoursInput.disabled = !connected;
-            if (cleanMinutesInput) cleanMinutesInput.disabled = !connected;
-            if (cleanSecondsInput) cleanSecondsInput.disabled = !connected;
-            if (updateCleanBtn) updateCleanBtn.disabled = !connected;
-            if (resetSessionUptimeBtn) resetSessionUptimeBtn.disabled = !connected;
-            if (resetHistoryBtn) resetHistoryBtn.disabled = !connected;
-            if (resetPasswordInput) resetPasswordInput.disabled = !connected;
-            if (pelletPriceInput) pelletPriceInput.disabled = !connected; 
-        }
-
-        function connectMQTT() {
-            if (client && client.connected) {
-                appendMqttLog("MQTT", "Już połączono z brokerem.");
-                return;
-            }
-
-            const broker = mqttBrokerInput.value;
-            const port = mqttPortInput.value; 
-            const username = mqttUsernameInput.value;
-            const password = mqttPasswordInput.value;
-
-            // Użycie protokołu WebSocket (wss://) dla połączeń z przeglądarki hostowanej na GitHubie
-            // Port 8084 jest typowy dla WSS w brokerze EMQX.
-            const mqttUrl = `wss://${broker}:${port}/mqtt`; 
-            
-            appendMqttLog("MQTT", `Próba połączenia z brokerem: ${mqttUrl}`);
-
-            client = mqtt.connect(mqttUrl, {
-                clientId: 'web_client_' + Math.random().toString(16).substr(2, 8),
-                username: username,
-                password: password,
-                clean: true,
-                keepalive: 60 
-            });
-
-            client.on('connect', () => {
-                updateMqttStatus(true);
-                // Subskrybuj tematy, na których ESP32 publikuje stan
-                client.subscribe(MQTT_TOPICS.state, (err) => {
-                    if (!err) {
-                        appendMqttLog("MQTT", `Subskrybowano: ${MQTT_TOPICS.state}`);
-                    } else {
-                        appendMqttLog("MQTT ERROR", `Błąd subskrypcji ${MQTT_TOPICS.state}: ${err.message}`, 'error');
-                    }
-                });
-            });
-
-            client.on('message', (topic, message) => {
-                const msgString = message.toString();
-                appendMqttLog(topic, msgString);
-                
-                if (topic === MQTT_TOPICS.state) {
-                    try {
-                        const data = JSON.parse(msgString);
-                        // Dodaj timestamp_ms, jeśli ESP32 go nie wysyła.
-                        // Jeśli ESP32 wysyła, użyj data.timestamp_ms
-                        if (data.timestamp_ms === undefined) { 
-                            data.timestamp_ms = Date.now(); 
-                        }
-                        updateUI(data); 
-                    } catch (e) {
-                        appendMqttLog("JSON PARSE ERROR", `Nie udało się sparsować wiadomości: ${e.message}`, 'error');
-                        console.error('MQTT: Failed to parse MQTT message:', e);
-                    }
-                }
-            });
-
-            client.on('error', (err) => {
-                appendMqttLog("MQTT ERROR", `Błąd połączenia: ${err.message}`, 'error');
-                console.error('MQTT: An error occurred:', err);
-                updateMqttStatus(false);
-                if (client) {
-                    client.end();
-                    client = null;
-                }
-            });
-
-            client.on('close', () => {
-                updateMqttStatus(false);
-                appendMqttLog("MQTT", "Połączenie zamknięte.");
-                client = null;
-            });
-
-            client.on('offline', () => {
-                appendMqttLog("MQTT", "Klient offline.");
-                updateMqttStatus(false);
-            });
-
-            client.on('reconnect', () => {
-                appendMqttLog("MQTT", "Próba ponownego połączenia...");
-                if (mqttStatusText) mqttStatusText.textContent = 'Łączenie...';
-                if (mqttStatusIndicator) {
-                    mqttStatusIndicator.classList.remove('connected');
-                    mqttStatusIndicator.classList.add('disconnected');
-                }
-            });
-        }
-
-        function disconnectMQTT() {
-            if (client) {
-                client.end();
-            } else {
-                appendMqttLog("MQTT", "Klient nie jest połączony, nie ma potrzeby rozłączania.");
-            }
-        }
-
-        // Funkcja do publikowania wiadomości MQTT
-        function publishMqttMessage(topic, message) {
-            if (isMqttConnected && client) {
-                client.publish(topic, message.toString(), {}, (err) => { 
-                    if (err) {
-                        appendMqttLog("PUBLISH ERROR", `Błąd publikacji na ${topic}: ${err.message}`, 'error');
-                    } else {
-                        appendMqttLog(topic, message.toString(), 'sent');
-                    }
-                });
-            } else {
-                appendMqttLog("MQTT ERROR", "Nie połączono z brokerem MQTT! Wiadomość nie wysłana.", 'error');
-                console.warn("MQTT client not connected. Message not sent.");
-            }
-        }
-        
-        // Helper function to format seconds into HH:MM:SS
-        function formatTime(totalSeconds) {
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        // Function to calculate average pellet consumption for a given duration
-        function calculateAverageConsumption(durationMinutes = 60) {
-            if (chartData.pellet_consumption.length === 0) {
-                return 0.0;
-            }
-
-            const now = luxon.DateTime.now();
-            const cutoffTime = now.minus({ minutes: durationMinutes }).toMillis();
-
-            const recentData = chartData.pellet_consumption.filter(point => point.x >= cutoffTime);
-
-            if (recentData.length === 0) {
-                return 0.0;
-            }
-
-            const totalConsumptionRate = recentData.reduce((sum, point) => sum + point.y, 0);
-            return totalConsumptionRate / recentData.length;
-        }
-
-        // Functions to aggregate data for bar charts
-        function aggregateDailyConsumption(history) {
-            const dailyData = new Map(); 
-            const now = luxon.DateTime.now();
-
-            history.forEach(point => {
-                const dateTime = luxon.DateTime.fromMillis(point.x);
-                const dateKey = dateTime.toFormat('yyyy-MM-dd');
-                const consumptionKg = point.y / 60; 
-
-                if (dailyData.has(dateKey)) {
-                    dailyData.set(dateKey, dailyData.get(dateKey) + consumptionKg);
-                } else {
-                    dailyData.set(dateKey, consumptionKg);
-                }
-            });
-
-            const labels = [];
-            const data = [];
-            for (let i = 6; i >= 0; i--) { 
-                const date = now.minus({ days: i });
-                const dateKey = date.toFormat('yyyy-MM-dd');
-                labels.push(date.toFormat('EEE dd.MM')); 
-                data.push(dailyData.has(dateKey) ? dailyData.get(dateKey) : 0);
-            }
-            return { labels, data };
-        }
-
-        function aggregateMonthlyConsumption(history) {
-            const monthlyData = new Map(); 
-            const now = luxon.DateTime.now();
-
-            history.forEach(point => {
-                const dateTime = luxon.DateTime.fromMillis(point.x);
-                const dateKey = dateTime.toFormat('yyyy-MM-dd');
-                const consumptionKg = point.y / 60;
-
-                if (monthlyData.has(dateKey)) {
-                    monthlyData.set(dateKey, monthlyData.get(dateKey) + consumptionKg);
-                } else {
-                    monthlyData.set(dateKey, consumptionKg);
-                }
-            });
-
-            const labels = [];
-            const data = [];
-            for (let i = 29; i >= 0; i--) { 
-                const date = now.minus({ days: i });
-                const dateKey = date.toFormat('dd.MM'); 
-                labels.push(dateKey); 
-                data.push(monthlyData.has(dateKey) ? monthlyData.get(dateKey) : 0);
-            }
-            return { labels, data };
-        }
-
-        function aggregateYearlyConsumption(history) {
-            const yearlyData = new Map(); 
-            const now = luxon.DateTime.now();
-
-            history.forEach(point => {
-                const dateTime = luxon.DateTime.fromMillis(point.x);
-                const monthKey = dateTime.toFormat('yyyy-MM');
-                const consumptionKg = point.y / 60;
-
-                if (yearlyData.has(monthKey)) {
-                    yearlyData.set(monthKey, yearlyData.get(monthKey) + consumptionKg);
-                } else {
-                    yearlyData.set(monthKey, consumptionKg);
-                }
-            });
-
-            const labels = [];
-            const data = [];
-            for (let i = 11; i >= 0; i--) { 
-                const month = now.minus({ months: i }).startOf('month');
-                const monthKey = month.toFormat('yyyy-MM');
-                labels.push(month.toFormat('MMM yyyy')); 
-                data.push(yearlyData.has(monthKey) ? yearlyData.get(monthKey) : 0);
-            }
-            return { labels, data };
-        }
-
-        function aggregateGlobalConsumption(history) {
-            const globalData = new Map(); 
-
-            history.forEach(point => {
-                const dateTime = luxon.DateTime.fromMillis(point.x);
-                const yearKey = dateTime.toFormat('yyyy');
-                const consumptionKg = point.y / 60;
-
-                if (globalData.has(yearKey)) {
-                    globalData.set(yearKey, globalData.get(yearKey) + consumptionKg);
-                } else {
-                    globalData.set(yearKey, consumptionKg);
-                }
-            });
-
-            const sortedYears = Array.from(globalData.keys()).sort();
-            const labels = sortedYears;
-            const data = sortedYears.map(year => globalData.get(year));
-
-            return { labels, data };
-        }
-
-
-        // Chart.js initialization
-        function initChart(initialHistory = []) {
-            const ctxTemp = document.getElementById('temperature-chart').getContext('2d');
-            const ctxCons = document.getElementById('consumption-chart').getContext('2d');
-            const ctxDailyCons = document.getElementById('daily-consumption-chart').getContext('2d');
-            const ctxMonthlyCons = document.getElementById('monthly-consumption-chart').getContext('2d'); 
-            const ctxYearlyCons = document.getElementById('yearly-consumption-chart').getContext('2d');
-            const ctxGlobalCons = document.getElementById('global-consumption-chart').getContext('2d');
-
-            for (const key in chartData) {
-                chartData[key] = [];
-            }
-
-            initialHistory.forEach(point => {
-                chartData.water_temp.push({ x: point.timestamp_ms, y: point.water_temp });
-                chartData.room_temp.push({ x: point.timestamp_ms, y: point.room_temp });
-                chartData.burner_temp.push({ x: point.timestamp_ms, y: point.burner_temp });
-                chartData.exhaust_temp.push({ x: point.timestamp_ms, y: point.exhaust_temp });
-                chartData.pellet_consumption.push({ x: point.timestamp_ms, y: point.pellet_consumption_rate });
-            });
-
-            if (temperatureChartInstance) temperatureChartInstance.destroy();
-            if (consumptionChartInstance) consumptionChartInstance.destroy();
-            if (dailyConsumptionChartInstance) dailyConsumptionChartInstance.destroy();
-            if (monthlyConsumptionChartInstance) monthlyConsumptionChartInstance.destroy();
-            if (yearlyConsumptionChartInstance) yearlyConsumptionChartInstance.destroy();
-            if (globalConsumptionChartInstance) globalConsumptionChartInstance.destroy();
-
-            temperatureChartInstance = new Chart(ctxTemp, {
-                type: 'line',
-                data: {
-                    labels: chartData.water_temp.map(point => point.x),
-                    datasets: [
-                        { label: 'Temperatura Wody', data: chartData.water_temp, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false },
-                        { label: 'Temperatura Pokojowa', data: chartData.room_temp, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false },
-                        { label: 'Temperatura Palnika', data: chartData.burner_temp, borderColor: '#e74c3c', backgroundColor: 'rgba(231, 76, 60, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false },
-                        { label: 'Temperatura Spalin', data: chartData.exhaust_temp, borderColor: '#f39c12', backgroundColor: 'rgba(243, 156, 18, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { type: 'time', time: { unit: 'minute', tooltipFormat: 'yyyy-MM-dd HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy', year: 'yyyy' } }, title: { display: true, text: 'Czas', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
-,
-                        y: { title: { display: true, text: 'Temperatura (°C)', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        zoom: { pan: { enabled: true, mode: 'xy', threshold: 10 }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, drag: { enabled: true, borderColor: 'rgba(52, 152, 219, 0.8)', borderWidth: 2, backgroundColor: 'rgba(52, 152, 219, 0.3)' }, mode: 'xy' } },
-                        tooltip: { mode: 'index', intersect: false, callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) label += context.parsed.y.toFixed(1) + '°C'; return label; } } }
-                    }
-                }
-            });
-
-            consumptionChartInstance = new Chart(ctxCons, {
-                type: 'line',
-                data: {
-                    labels: chartData.pellet_consumption.map(point => point.x),
-                    datasets: [
-                        { label: 'Zużycie Opału (kg/h)', data: chartData.pellet_consumption, borderColor: '#d35400', backgroundColor: 'rgba(211, 84, 0, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false },
-                        { label: 'Średnie Zużycie (ostatnia godzina)', data: [], borderColor: '#ffeb3b', backgroundColor: 'rgba(255, 235, 59, 0.2)', borderDash: [5, 5], fill: false, tension: 0, pointRadius: 0, hidden: false, yAxisID: 'y' }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { type: 'time', time: { unit: 'minute', tooltipFormat: 'yyyy-MM-dd HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy', year: 'yyyy' } }, title: { display: true, text: 'Czas', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
-,
-                        y: { title: { display: true, text: 'Zużycie (kg/h)', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        zoom: { pan: { enabled: true, mode: 'xy', threshold: 10 }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, drag: { enabled: true, borderColor: 'rgba(211, 84, 0, 0.8)', borderWidth: 2, backgroundColor: 'rgba(211, 84, 0, 0.3)' }, mode: 'xy' } },
-                        tooltip: { mode: 'index', intersect: false, callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) { if (context.dataset.label === 'Średnie Zużycie (ostatnia godzina)') { const avgConsumptionText = document.getElementById('average-pellet-consumption').textContent; const avgValue = parseFloat(avgConsumptionText); label += avgValue.toFixed(2) + ' kg/h'; } else { label += context.parsed.y.toFixed(2) + ' kg/h'; } } return label; } } }
-                    }
-                }
-            });
-
-            const commonBarChartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#bbb' }, title: { display: true, text: 'Okres', color: 'white' } },
-                    y: { beginAtZero: true, title: { display: true, text: 'Zużycie (kg)', color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#bbb' } }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + ' kg'; return label; } } }
-                }
+            // Tematy MQTT - zgodne z tymi w kodzie ESP32
+            const MQTT_TOPICS = {
+                state: "pellet/boiler/state",
+                control: "pellet/boiler/control", // Dla komend JSON (np. {"command":"power"})
+                targetTemp: "pellet/boiler/target_temp", // Dla temperatury docelowej
+                power: "pellet/boiler/power" // Dla prostych komand ON/OFF
             };
 
-            dailyConsumptionChartInstance = new Chart(ctxDailyCons, { type: 'bar', data: { labels: [], datasets: [{ label: 'Zużycie Dzienne', data: [], backgroundColor: 'rgba(211, 84, 0, 0.7)', borderColor: '#d35400', borderWidth: 1 }] }, options: commonBarChartOptions });
-            monthlyConsumptionChartInstance = new Chart(ctxMonthlyCons, { type: 'bar', data: { labels: [], datasets: [{ label: 'Zużycie Miesięczne', data: [], backgroundColor: 'rgba(211, 84, 0, 0.7)', borderColor: '#d35400', borderWidth: 1 }] }, options: commonBarChartOptions });
-            yearlyConsumptionChartInstance = new Chart(ctxYearlyCons, { type: 'bar', data: { labels: [], datasets: [{ label: 'Zużycie Roczne', data: [], backgroundColor: 'rgba(211, 84, 0, 0.7)', borderColor: '#d35400', borderWidth: 1 }] }, options: commonBarChartOptions });
-            globalConsumptionChartInstance = new Chart(ctxGlobalCons, { type: 'bar', data: { labels: [], datasets: [{ label: 'Zużycie Globalne', data: [], backgroundColor: 'rgba(211, 84, 0, 0.7)', borderColor: '#d35400', borderWidth: 1 }] }, options: commonBarChartOptions });
-        }
+            // --- Elementy DOM (wszystkie kluczowe elementy HTML są teraz poprawnie przypisane) ---
+            // Zmienne powiązane z HTML - upewnij się, że ID w HTML odpowiadają nazwom tutaj!
+            const mqttBrokerInput = document.getElementById('mqtt-broker');
+            const mqttPortInput = document.getElementById('mqtt-port');
+            const mqttUsernameInput = document.getElementById('mqtt-username');
+            const mqttPasswordInput = document.getElementById('mqtt-password');
+            const mqttConnectBtn = document.getElementById('mqtt-connect-btn');
+            const mqttDisconnectBtn = document.getElementById('mqtt-disconnect-btn');
+            const mqttStatusIndicator = document.getElementById('mqtt-status-indicator');
+            const mqttStatusText = document.getElementById('mqtt-status-text');
+            const mqttLogDiv = document.getElementById('mqtt-log');
 
-        // Add a single new data point to the chart
-        function addChartDataPoint(data) {
-            const timestamp = data.timestamp_ms; 
+            const powerBtn = document.getElementById('power-btn');
+            const targetSlider = document.getElementById('target-slider');
+            const targetDisplay = document.getElementById('target-display'); 
+            const targetTemp = document.getElementById('target-temp'); 
 
-            // Temperature Chart Data
-            chartData.water_temp.push({ x: timestamp, y: data.water_temp });
-            chartData.room_temp.push({ x: timestamp, y: data.room_temp });
-            chartData.burner_temp.push({ x: timestamp, y: data.burner_temp });
-            chartData.exhaust_temp.push({ x: timestamp, y: data.exhaust_temp });
+            const waterTempDisplay = document.getElementById('water-temp');
+            const roomTempDisplay = document.getElementById('room-temp');
+            const burnerTempDisplay = document.getElementById('burner-temp');
+            const exhaustTempDisplay = document.getElementById('exhaust-temp');
+            const waterProgressBar = document.getElementById('water-progress');
+            const flameIndicator = document.getElementById('flame-indicator');
             
-            // Limit history data points for temperature chart
-            while (chartData.water_temp.length > 200) { // Keep last 200 points (approx 200 minutes)
-                chartData.water_temp.shift();
-                chartData.room_temp.shift();
-                chartData.burner_temp.shift();
-                chartData.exhaust_temp.shift();
-            }
+            const feederStatusIndicatorMini = document.getElementById('feeder-status-indicator-mini');
+            const blowerStatusIndicatorMini = document.getElementById('blower-status-indicator-mini');
+            const maintenanceStatus = document.getElementById('maintenance-status');
+            const maintenanceStatusBadge = document.getElementById('maintenance-status-badge');
+            const ashCleaningStatus = document.getElementById('ash-cleaning-status');
+            const cleaningStatusBadge = document.getElementById('cleaning-status-badge');
+            const igniterIndicator = document.getElementById('igniter-indicator');
+            const igniterStatusText = document.getElementById('igniter-status-text');
+            const igniterTempDisplay = document.getElementById('igniter-temp-display');
+            const feederStatus = document.getElementById('feeder-status'); 
+            const cycleProgressBar = document.getElementById('cycle-progress-bar');
+            const cycleTimer = document.getElementById('cycle-timer');
+            const pelletAmount = document.getElementById('pellet-amount'); 
+            const averagePelletConsumptionDisplay = document.getElementById('average-pellet-consumption'); 
 
-            if (temperatureChartInstance) { // Dodano sprawdzenie instancji wykresu
-                temperatureChartInstance.data.labels = chartData.water_temp.map(point => point.x);
-                temperatureChartInstance.data.datasets[chartDatasetMap['water_temp']].data = chartData.water_temp;
-                temperatureChartInstance.data.datasets[chartDatasetMap['room_temp']].data = chartData.room_temp;
-                temperatureChartInstance.data.datasets[chartDatasetMap['burner_temp']].data = chartData.burner_temp;
-                temperatureChartInstance.data.datasets[chartDatasetMap['exhaust_temp']].data = chartData.exhaust_temp;
-                temperatureChartInstance.update();
-            }
+            const feedTimeInput = document.getElementById('feed-time');
+            const pauseTimeInput = document.getElementById('pause-time');
+            const maintenanceFeedInput = document.getElementById('maintenance-feed'); 
+            const maintenancePauseInput = document.getElementById('maintenance-pause'); 
 
-            // Consumption Chart Data
-            chartData.pellet_consumption.push({ x: timestamp, y: data.currentPelletConsumptionRate });
+            const blowerManualControlsDiv = document.getElementById('blower-manual-controls');
+            const blowerManualToggle = document.getElementById('blower-manual-toggle');
+            const blowerWorkPowerSlider = document.getElementById('blower-work-power-slider');
+            const blowerWorkPowerDisplay = document.getElementById('blower-work-power-display');
+            const blowerMaintenanceManualPowerSlider = document.getElementById('blower-maintenance-manual-power-slider');
+            const blowerMaintenanceManualPowerDisplay = document.getElementById('blower-maintenance-manual-power-display');
+            const blowerPurgeManualPowerSlider = document.getElementById('blower-purge-manual-power-slider');
+            const blowerPurgeManualPowerDisplay = document.getElementById('blower-purge-manual-power-display');
+            const blowerPowerSlider = document.getElementById('blower-power-slider'); 
+            const blowerPowerDisplay = document.getElementById('blower-power-display'); 
+            const blowerPurgeToggle = document.getElementById('blower-purge-toggle');
+            const blowerPurgeTimesContainer = document.getElementById('blower-purge-times');
+            const blowerPurgeOnInput = document.getElementById('blower-purge-on');
+            const blowerPurgeOffInput = document.getElementById('blower-purge-off');
+
+
+            const sessionUptimeDisplay = document.getElementById('session-uptime');
+            const totalUptimeDisplay = document.getElementById('total-uptime');
+            const rssi = document.getElementById('rssi');
+            const ipAddr = document.getElementById('ip-addr');
+
+            const burnerHoursDisplay = document.getElementById('burner-hours'); 
+            const estimatedCostDisplay = document.getElementById('estimated-cost'); 
+            const pelletPriceInput = document.getElementById('pellet-price');
+            const pelletConsumptionInput = document.getElementById('pellet-consumption'); 
+            const totalCalculatedCost = document.getElementById('total-calculated-cost'); 
+            const efficiencyFill = document.getElementById('efficiency-fill');
+            const efficiencyLabel = document.getElementById('efficiency-label');
+
+            const cleanHoursInput = document.getElementById('clean-hours');
+            const cleanMinutesInput = document.getElementById('clean-minutes');
+            const cleanSecondsInput = document.getElementById('clean-seconds');
+            const updateCleanBtn = document.getElementById('update-clean-btn');
+            const cleanCountdownDisplay = document.getElementById('clean-countdown-display');
+
+            const ashBtn = document.getElementById('ash-btn');
+            const resetSessionUptimeBtn = document.getElementById('reset-session-uptime-btn');
+            const resetHistoryBtn = document.getElementById('reset-history-btn');
+            const resetPasswordInput = document.getElementById('reset-password');
+            const resetMessageDiv = document.getElementById('reset-message');
             
-            // Limit history data points for consumption chart
-            while (chartData.pellet_consumption.length > 200) { // Keep last 200 points
-                chartData.pellet_consumption.shift();
-            }
-            if (consumptionChartInstance) { // Dodano sprawdzenie instancji wykresu
-                consumptionChartInstance.data.labels = chartData.pellet_consumption.map(point => point.x);
-                consumptionChartInstance.data.datasets[0].data = chartData.pellet_consumption;
-                consumptionChartInstance.update();
-            }
-        }
+            const temperatureChartToggles = document.getElementById('temperature-chart-toggles');
+            const mainChartSwitcher = document.getElementById('main-chart-switcher');
+            const chartContainerTemp = document.getElementById('chart-container-temp');
+            const chartContainerConsumption = document.getElementById('chart-container-consumption');
+            const chartContainerDailyConsumption = document.getElementById('chart-container-daily-consumption');
+            const chartContainerMonthlyConsumption = document.getElementById('monthly-consumption-chart'); // Corrected ID
+            const chartContainerYearlyConsumption = document.getElementById('yearly-consumption-chart');
+            const chartContainerGlobalConsumption = document.getElementById('global-consumption-chart');
+            const historyRangeButtons = document.querySelectorAll('.history-btn');
 
 
-        // Update UI based on state
-        function updateUI(data) {
-            // Dodano sprawdzenia 'if (element)' przed każdą próbą aktualizacji tekstu/klasy/wartości
-            // aby uniknąć błędów, jeśli element nie zostanie znaleziony z jakiegoś powodu.
-            if (waterTempDisplay) waterTempDisplay.textContent = data.water_temp.toFixed(1) + '°C';
-            if (roomTempDisplay) roomTempDisplay.textContent = data.room_temp.toFixed(1) + '°C';
-            if (burnerTempDisplay) burnerTempDisplay.textContent = data.burner_temp.toFixed(1) + '°C';
-            if (exhaustTempDisplay) exhaustTempDisplay.textContent = data.exhaust_temp.toFixed(1) + '°C';
-            if (targetTemp) targetTemp.textContent = data.target_temp.toFixed(0); 
-            if (targetSlider) targetSlider.value = data.target_temp;
-            if (targetDisplay) targetDisplay.textContent = data.target_temp.toFixed(0) + '°C'; 
-            
-            const progress = Math.min(100, (data.water_temp / data.target_temp) * 100);
-            if (waterProgressBar) waterProgressBar.style.width = progress + '%';
-            
-            if (powerBtn) {
-                if (data.power === "ON") {
-                    powerBtn.innerHTML = '<i class="fas fa-power-off"></i> WŁĄCZONY';
-                    powerBtn.classList.remove('power-off');
-                    powerBtn.classList.add('success');
-                } else {
-                    powerBtn.innerHTML = '<i class="fas fa-power-off"></i> WYŁĄCZONY';
-                    powerBtn.classList.remove('success');
-                    powerBtn.classList.add('power-off');
+            // Chart.js setup - Zmieniono nazwy zmiennych, aby nie kolidowały z nazwami funkcji
+            let temperatureChartInstance;
+            let consumptionChartInstance;
+            let dailyConsumptionChartInstance;
+            let monthlyConsumptionChartInstance;
+            let yearlyConsumptionChartInstance;
+            let globalConsumptionChartInstance;
+
+            const chartData = {
+                water_temp: [],
+                room_temp: [],
+                burner_temp: [],
+                exhaust_temp: [],
+                pellet_consumption: []
+            };
+            const chartDatasetMap = {
+                'water_temp': 0,
+                'room_temp': 1,
+                'burner_temp': 2,
+                'exhaust_temp': 3
+            };
+
+            // --- Funkcje pomocnicze dla UI i MQTT ---
+
+            function appendMqttLog(topic, message, type = 'received') {
+                const now = new Date();
+                const time = now.toTimeString().split(' ')[0].substring(0, 8);
+                const logEntry = document.createElement('div');
+                logEntry.classList.add('mqtt-log-entry');
+                let messageClass = 'mqtt-log-message';
+                if (type === 'sent') {
+                    messageClass += ' mqtt-log-sent'; // Dodaj klasę dla wysłanych wiadomości (możesz dodać styl w CSS)
+                } else if (type === 'error') {
+                    messageClass += ' mqtt-log-error'; // Dodaj klasę dla błędów
+                }
+                logEntry.innerHTML = `<span class="mqtt-log-time">[${time}]</span> <span class="mqtt-log-topic">${topic}</span>: <span class="${messageClass}">${message}</span>`;
+                mqttLogDiv.prepend(logEntry); 
+                while (mqttLogDiv.children.length > 50) {
+                    mqttLogDiv.removeChild(mqttLogDiv.lastChild);
                 }
             }
-            
-            if (flameIndicator) {
-                flameIndicator.className = data.flame ? 'flame-indicator on' : 'flame-indicator off';
-            }
-            
-            if (feederStatusIndicatorMini) feederStatusIndicatorMini.className = 'status-indicator ' + (data.feeder_active || data.reverseFeederActive ? 'status-active' : 'status-inactive');
-            if (blowerStatusIndicatorMini) blowerStatusIndicatorMini.className = 'status-indicator ' + (data.blower_active ? 'status-active' : 'status-inactive');
 
-            if (feederStatus && cycleProgressBar && cycleTimer) {
-                let feederText = "PAUZA";
-                let progressBarColor = 'var(--feeder-pause-color)';
-                let totalPhaseDuration = data.currentPhaseDuration;
-                let remainingTimeInPhase = data.timeRemainingInPhase;
-
-                // Sprawdź, czy ESP32 wysyła 'feederCycleState', w przeciwnym razie użyj 'feeder_active'
-                if (data.feederCycleState !== undefined) {
-                    switch (data.feederCycleState) {
-                        case 0: feederText = "PRZERWA"; progressBarColor = 'var(--feeder-pause-color)'; break;
-                        case 1: feederText = "PODAWANIE"; progressBarColor = 'var(--feeder-forward-color)'; break;
-                        case 2: feederText = "KRÓTKA PRZERWA"; progressBarColor = 'var(--feeder-pause-color)'; break;
-                        case 3: feederText = "COFANIE"; progressBarColor = 'var(--feeder-reverse-color)'; break;
-                        default: feederText = "NIEZNANY"; progressBarColor = 'var(--feeder-pause-color)'; break;
+            function updateMqttStatus(connected) {
+                isMqttConnected = connected;
+                if (connected) {
+                    mqttStatusIndicator.classList.remove('disconnected');
+                    mqttStatusIndicator.classList.add('connected');
+                    mqttStatusText.textContent = "Połączono";
+                    if (!client._hasConnectedOnce) { // Zapobiegaj wielokrotnemu logowaniu przy ponownym połączeniu
+                       appendMqttLog("MQTT", "Połączono z brokerem"); 
+                       client._hasConnectedOnce = true;
                     }
                 } else {
-                    feederText = data.feeder_active ? "PODAWANIE" : "PRZERWA";
-                    progressBarColor = data.feeder_active ? 'var(--feeder-forward-color)' : 'var(--feeder-pause-color)';
+                    mqttStatusIndicator.classList.remove('connected');
+                    mqttStatusIndicator.classList.add('disconnected');
+                    mqttStatusText.textContent = "Rozłączono";
+                    if (client && client._hasConnectedOnce) { // Loguj tylko jeśli było wcześniej połączone
+                        appendMqttLog("MQTT", "Rozłączono z brokerem");
+                        client._hasConnectedOnce = false;
+                    }
                 }
+                // Zablokuj/odblokuj przyciski i suwak w zależności od statusu połączenia MQTT
+                if (mqttConnectBtn) mqttConnectBtn.disabled = connected;
+                if (mqttDisconnectBtn) mqttDisconnectBtn.disabled = !connected;
+                if (powerBtn) powerBtn.disabled = !connected;
+                if (targetSlider) targetSlider.disabled = !connected;
                 
-                feederStatus.innerHTML = `<span class="status-indicator ${data.feeder_active || data.reverseFeederActive ? 'status-active' : 'status-inactive'}"></span> PODAJNIK: ${feederText}`;
-                feederStatus.classList.toggle('on', data.feeder_active || data.reverseFeederActive);
-                feederStatus.classList.toggle('off', !(data.feeder_active || data.reverseFeederActive));
-
-                const progressPercentage = totalPhaseDuration > 0 ? ((totalPhaseDuration - remainingTimeInPhase) / totalPhaseDuration) * 100 : 0;
-                cycleProgressBar.style.width = `${progressPercentage}%`;
-                cycleProgressBar.style.background = progressBarColor;
-
-                cycleTimer.textContent = `${remainingTimeInPhase}s do końca`;
+                // Dodatkowe elementy, które powinny być aktywne/nieaktywne w zależności od połączenia
+                // (Dodano więcej sprawdzeń 'if (element)' dla bezpieczeństwa)
+                if (feedTimeInput) feedTimeInput.disabled = !connected;
+                if (pauseTimeInput) pauseTimeInput.disabled = !connected;
+                if (maintenanceFeedInput) maintenanceFeedInput.disabled = !connected;
+                if (maintenancePauseInput) maintenancePauseInput.disabled = !connected;
+                if (blowerManualToggle) blowerManualToggle.disabled = !connected;
+                if (blowerWorkPowerSlider) blowerWorkPowerSlider.disabled = !connected;
+                if (blowerMaintenanceManualPowerSlider) blowerMaintenanceManualPowerSlider.disabled = !connected;
+                if (blowerPurgeManualPowerSlider) blowerPurgeManualPowerSlider.disabled = !connected;
+                if (blowerPurgeToggle) blowerPurgeToggle.disabled = !connected;
+                if (blowerPurgeOnInput) blowerPurgeOnInput.disabled = !connected;
+                if (blowerPurgeOffInput) blowerPurgeOffInput.disabled = !connected;
+                if (autoCleanToggle) autoCleanToggle.disabled = !connected;
+                if (ashBtn) ashBtn.disabled = !connected;
+                if (cleanHoursInput) cleanHoursInput.disabled = !connected;
+                if (cleanMinutesInput) cleanMinutesInput.disabled = !connected;
+                if (cleanSecondsInput) cleanSecondsInput.disabled = !connected;
+                if (updateCleanBtn) updateCleanBtn.disabled = !connected;
+                if (resetSessionUptimeBtn) resetSessionUptimeBtn.disabled = !connected;
+                if (resetHistoryBtn) resetHistoryBtn.disabled = !connected;
+                if (resetPasswordInput) resetPasswordInput.disabled = !connected;
+                if (pelletPriceInput) pelletPriceInput.disabled = !connected; 
             }
 
-            if (pelletAmount) {
-                pelletAmount.textContent = data.currentPelletConsumptionRate.toFixed(2);
-            }
-
-            const avgConsumption = calculateAverageConsumption(60); 
-            if (averagePelletConsumptionDisplay) averagePelletConsumptionDisplay.textContent = avgConsumption.toFixed(2) + 'kg/h';
-
-            if (maintenanceStatus && maintenanceStatusBadge) {
-                maintenanceStatus.textContent = data.maintenance_mode ? "AKTYWNY" : "NIEAKTYWNY";
-                maintenanceStatus.classList.toggle('maintenance-active', data.maintenance_mode);
-                maintenanceStatus.classList.toggle('maintenance-inactive', !data.maintenance_mode);
-                maintenanceStatusBadge.className = 'status-badge ' + (data.maintenance_mode ? 'status-good' : 'status-error');
-            }
-            
-            if (ashCleaningStatus && cleaningStatusBadge) {
-                ashCleaningStatus.textContent = data.ash_cleaning ? "AKTYWNE" : "NIE";
-                cleaningStatusBadge.className = 'status-badge ' + (data.ash_cleaning ? 'status-warning' : 'status-good');
-            }
-
-            if (igniterTempDisplay) igniterTempDisplay.textContent = data.igniterTemp ? `${data.igniterTemp.toFixed(1)}°C` : 'N/A';
-            if (igniterStatusText) igniterStatusText.textContent = data.igniterState;
-            if (igniterStatusText) igniterStatusText.className = `ignition-status ${data.igniterState}`; 
-
-            if (igniterIndicator) { 
-                if (data.igniterState === 'heating' || data.igniterState === 'ready') {
-                    igniterIndicator.style.display = 'flex';
-                    igniterIndicator.className = `igniter-indicator ${data.igniterState}`;
-                } else {
-                    igniterIndicator.style.display = 'none';
+            function connectMQTT() {
+                if (client && client.connected) {
+                    appendMqttLog("MQTT", "Już połączono z brokerem.");
+                    return;
                 }
-            }
-            
-            if (feedTimeInput && data.feedOnTime !== undefined) feedTimeInput.value = data.feedOnTime;
-            if (pauseTimeInput && data.feedOffTime !== undefined) pauseTimeInput.value = data.feedOffTime;
-            // Sprawdzenie istnienia dla nowo dodanych zmiennych
-            if (maintenanceFeedInput && data.maintenanceFeedOnTime !== undefined) maintenanceFeedInput.value = data.maintenanceFeedOnTime;
-            if (maintenancePauseInput && data.maintenanceFeedOffTime !== undefined) maintenancePauseInput.value = data.maintenanceFeedOffTime;
-            
-            if (blowerManualToggle && data.blowerManualControl !== undefined) blowerManualToggle.checked = data.blowerManualControl;
-            if (blowerManualControlsDiv) blowerManualControlsDiv.style.display = data.blowerManualControl ? 'block' : 'none';
 
-            if (blowerWorkPowerSlider && blowerWorkPowerDisplay && data.blowerWorkPower !== undefined) {
-                blowerWorkPowerSlider.value = data.blowerWorkPower;
-                blowerWorkPowerDisplay.textContent = `${data.blowerWorkPower}%`;
-            }
-            if (blowerPurgeManualPowerSlider && blowerPurgeManualPowerDisplay && data.blowerPurgeManualPower !== undefined) {
-                blowerPurgeManualPowerSlider.value = data.blowerPurgeManualPower;
-                blowerPurgeManualPowerDisplay.textContent = `${data.blowerPurgeManualPower}%`;
-            }
-            if (blowerMaintenanceManualPowerSlider && blowerMaintenanceManualPowerDisplay && data.blowerMaintenanceManualPower !== undefined) {
-                blowerMaintenanceManualPowerSlider.value = data.blowerMaintenanceManualPower;
-                blowerMaintenanceManualPowerDisplay.textContent = `${data.blowerMaintenanceManualPower}%`;
-            }
+                const broker = mqttBrokerInput.value;
+                const port = mqttPortInput.value; 
+                const username = mqttUsernameInput.value;
+                const password = mqttPasswordInput.value;
 
-            if (blowerPowerSlider && blowerPowerDisplay && data.effectiveBlowerPower !== undefined) {
-                blowerPowerSlider.value = data.effectiveBlowerPower;
-                blowerPowerDisplay.textContent = `${data.effectiveBlowerPower}%`;
-            }
+                // Użycie protokołu WebSocket (wss://) dla połączeń z przeglądarki hostowanej na GitHubie
+                // Port 8084 jest typowy dla WSS w brokerze EMQX.
+                const mqttUrl = `wss://${broker}:${port}/mqtt`; 
+                
+                appendMqttLog("MQTT", `Próba połączenia z brokerem: ${mqttUrl}`);
 
-            if (blowerPurgeToggle && data.blowerPurgeMode !== undefined) blowerPurgeToggle.checked = data.blowerPurgeMode;
-            if (blowerPurgeTimesContainer) blowerPurgeTimesContainer.style.display = data.blowerPurgeMode ? 'flex' : 'none';
-            if (blowerPurgeOnInput && data.blowerPurgeOnTime !== undefined) blowerPurgeOnInput.value = data.blowerPurgeOnTime;
-            if (blowerPurgeOffInput && data.blowerPurgeOffInput !== undefined) blowerPurgeOffInput.value = data.blowerPurgeOffInput; // POPRAWKA: użyj data.blowerPurgeOffTime
+                client = mqtt.connect(mqttUrl, {
+                    clientId: 'web_client_' + Math.random().toString(16).substr(2, 8),
+                    username: username,
+                    password: password,
+                    clean: true,
+                    keepalive: 60 
+                });
 
-            if (sessionUptimeDisplay) sessionUptimeDisplay.textContent = formatTime(data.session_uptime);
-            if (totalUptimeDisplay) totalUptimeDisplay.textContent = formatTime(data.total_uptime);
+                client.on('connect', () => {
+                    updateMqttStatus(true);
+                    // Subskrybuj tematy, na których ESP32 publikuje stan
+                    client.subscribe(MQTT_TOPICS.state, (err) => {
+                        if (!err) {
+                            appendMqttLog("MQTT", `Subskrybowano: ${MQTT_TOPICS.state}`);
+                        } else {
+                            appendMqttLog("MQTT ERROR", `Błąd subskrypcji ${MQTT_TOPICS.state}: ${err.message}`, 'error');
+                        }
+                    });
+                });
 
-            if (rssi) rssi.textContent = `${data.rssi}dBm`;
-            if (ipAddr) ipAddr.textContent = data.ip || "0.0.0.0"; // IP address from ESP32
-
-            // MQTT status from ESP32 perspective
-            if (data.mqtt_connected !== undefined) {
-                if (data.mqtt_connected) {
-                    if (mqttStatusText) mqttStatusText.textContent = "Połączono";
-                    if (mqttStatusIndicator) {
-                        mqttStatusIndicator.classList.remove('mqtt-disconnected');
-                        mqttStatusIndicator.classList.add('connected');
+                client.on('message', (topic, message) => {
+                    const msgString = message.toString();
+                    appendMqttLog(topic, msgString);
+                    
+                    if (topic === MQTT_TOPICS.state) {
+                        try {
+                            const data = JSON.parse(msgString);
+                            // Dodaj timestamp_ms, jeśli ESP32 go nie wysyła.
+                            // Jeśli ESP32 wysyła, użyj data.timestamp_ms
+                            if (data.timestamp_ms === undefined) { 
+                                data.timestamp_ms = Date.now(); 
+                            }
+                            updateUI(data); 
+                        }
+                        catch (e) {
+                            appendMqttLog("JSON PARSE ERROR", `Nie udało się sparsować wiadomości: ${e.message}`, 'error');
+                            console.error('MQTT: Failed to parse MQTT message:', e);
+                        }
                     }
-                } else {
-                    if (mqttStatusText) mqttStatusText.textContent = "Brak połączenia";
+                });
+
+                client.on('error', (err) => {
+                    appendMqttLog("MQTT ERROR", `Błąd połączenia: ${err.message}`, 'error');
+                    console.error('MQTT: An error occurred:', err);
+                    updateMqttStatus(false);
+                    if (client) {
+                        client.end();
+                        client = null;
+                    }
+                });
+
+                client.on('close', () => {
+                    updateMqttStatus(false);
+                    appendMqttLog("MQTT", "Połączenie zamknięte.");
+                    client = null;
+                });
+
+                client.on('offline', () => {
+                    appendMqttLog("MQTT", "Klient offline.");
+                    updateMqttStatus(false);
+                });
+
+                client.on('reconnect', () => {
+                    appendMqttLog("MQTT", "Próba ponownego połączenia...");
+                    if (mqttStatusText) mqttStatusText.textContent = 'Łączenie...';
                     if (mqttStatusIndicator) {
                         mqttStatusIndicator.classList.remove('connected');
                         mqttStatusIndicator.classList.add('disconnected');
                     }
-                }
-            } else { 
-                updateMqttStatus(isMqttConnected);
-            }
-            
-            if (temperatureChartInstance && consumptionChartInstance && data.timestamp_ms) {
-                addChartDataPoint(data);
-                if (chartData.pellet_consumption.length > 0) {
-                    const firstTimestamp = chartData.pellet_consumption[0].x;
-                    const lastTimestamp = chartData.pellet_consumption[chartData.pellet_consumption.length - 1].x;
-
-                    const avgCons = calculateAverageConsumption(60); // Ponownie oblicz średnie zużycie
-                    consumptionChartInstance.data.datasets[1].data = [
-                        { x: firstTimestamp, y: avgCons },
-                        { x: lastTimestamp, y: avgCons }
-                    ];
-                    consumptionChartInstance.update();
-                }
-            } else {
-                console.warn("Chart not initialized or timestamp missing, skipping addChartDataPoint.");
-            }
-            // Aktualizacja wykresów słupkowych
-            const dailyData = aggregateDailyConsumption(chartData.pellet_consumption);
-            if (dailyConsumptionChartInstance) {
-                dailyConsumptionChartInstance.data.labels = dailyData.labels;
-                dailyConsumptionChartInstance.data.datasets[0].data = dailyData.data;
-                dailyConsumptionChartInstance.update();
+                });
             }
 
-            const monthlyData = aggregateMonthlyConsumption(chartData.pellet_consumption);
-            if (monthlyConsumptionChartInstance) {
-                monthlyConsumptionChartInstance.data.labels = monthlyData.labels;
-                monthlyConsumptionChartInstance.data.datasets[0].data = monthlyData.data;
-                monthlyConsumptionChartInstance.update();
-            }
-
-            const yearlyData = aggregateYearlyConsumption(chartData.pellet_consumption);
-            if (yearlyConsumptionChartInstance) {
-                yearlyConsumptionChartInstance.data.labels = yearlyData.labels;
-                yearlyConsumptionChartInstance.data.datasets[0].data = yearlyData.data;
-                yearlyConsumptionChartInstance.update();
-            }
-
-            const globalData = aggregateGlobalConsumption(chartData.pellet_consumption);
-            if (globalConsumptionChartInstance) {
-                globalConsumptionChartInstance.data.labels = globalData.labels;
-                globalConsumptionChartInstance.data.datasets[0].data = globalData.data;
-                globalConsumptionChartInstance.update();
-            }
-
-
-            const currentBurnerHoursParts = burnerHoursDisplay.textContent.split(':');
-            let currentBurnerMinutes = parseInt(currentBurnerHoursParts[0] || 0) * 60 + parseInt(currentBurnerHoursParts[1] || 0);
-            
-            if (data.flame && data.power === "ON") { 
-                currentBurnerMinutes += (1/60); // Zaktualizuj minity, jeśli płomień jest aktywny i piec jest ON
-            }
-            const newBurnerHours = Math.floor(currentBurnerMinutes / 60);
-            const newBurnerMinutes = Math.floor(currentBurnerMinutes % 60);
-            if (burnerHoursDisplay) burnerHoursDisplay.textContent = `${newBurnerHours.toString().padStart(2, '0')}:${newBurnerMinutes.toString().padStart(2, '0')}`;
-
-            calculateCost(); 
-
-            const efficiency = Math.min(100, (data.water_temp / 85) * 100).toFixed(0);
-            if (efficiencyFill) efficiencyFill.style.width = `${efficiency}%`;
-            if (efficiencyLabel) efficiencyLabel.textContent = `${efficiency}% Wydajność`;
-
-            if (cleanCountdownDisplay && data.time_to_clean !== undefined) {
-                const cleanHours = Math.floor(data.time_to_clean / 3600);
-                const cleanMinutes = Math.floor((data.time_to_clean % 3600) / 60);
-                const cleanSeconds = Math.floor(data.time_to_clean % 60);
-                cleanCountdownDisplay.textContent = 
-                    `${cleanHours.toString().padStart(2, '0')}:${cleanMinutes.toString().padStart(2, '0')}:${cleanSeconds.toString().padStart(2, '0')}`;
-            }
-        }
-        
-        // --- Wysyłanie komend do ESP32 (teraz przez MQTT) ---
-        function sendCommand(cmd, value = null) {
-            const payload = value !== null ? {command: cmd, value: value} : {command: cmd};
-            
-            if (client && client.connected) {
-                publishMqttMessage(MQTT_TOPICS.control, JSON.stringify(payload));
-            } else {
-                appendMqttLog("ERROR", "Nie połączono z brokerem MQTT, komenda nie wysłana!", 'error');
-                console.error("MQTT client not connected, command not sent via MQTT.");
-            }
-            
-            if (cmd === 'reset_history') {
-                if (resetMessageDiv) {
-                    resetMessageDiv.textContent = 'Komenda resetowania danych wysłana. Odśwież stronę po chwili.';
-                    resetMessageDiv.style.color = 'var(--warning)';
-                }
-            } else if (cmd === 'reset_session_uptime') {
-                console.log('Komenda resetowania czasu pracy sesji wysłana.');
-            }
-        }
-        
-        // --- Event Handlers ---
-        // Zapewnienie, że elementy istnieją przed dodaniem EventListener
-        const autoCleanToggle = document.getElementById('auto-clean-toggle');
-        if (autoCleanToggle) {
-            autoCleanToggle.addEventListener('change', () => {
-                sendCommand('autoclean', autoCleanToggle.checked);
-            });
-        }
-
-        if (powerBtn) {
-            powerBtn.addEventListener('click', () => {
-                const currentStateText = powerBtn.textContent.trim();
-                let newPowerState;
-                if (currentStateText.includes("WŁĄCZONY")) {
-                    newPowerState = "OFF";
+            function disconnectMQTT() {
+                if (client) {
+                    client.end();
                 } else {
-                    newPowerState = "ON";
+                    appendMqttLog("MQTT", "Klient nie jest połączony, nie ma potrzeby rozłączania.");
                 }
-                publishMqttMessage(MQTT_TOPICS.power, newPowerState);
-            });
-        }
-        
-        if (targetSlider) {
-            targetSlider.addEventListener('input', () => {
-                const value = parseInt(targetSlider.value);
-                if (targetDisplay) targetDisplay.textContent = value + '°C';
-                publishMqttMessage(MQTT_TOPICS.targetTemp, value.toString());
-            });
-        }
+            }
 
-        if (ashBtn) {
-            ashBtn.addEventListener('click', () => {
-                sendCommand('clean');
-            });
-        }
-        
-        if (updateCleanBtn) {
-            updateCleanBtn.addEventListener('click', () => {
-                const hours = parseInt(cleanHoursInput.value || 0); 
-                const minutes = parseInt(cleanMinutesInput.value || 0);
-                const seconds = parseInt(cleanSecondsInput.value || 0);
-                const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
-                sendCommand('set_clean_time', totalSeconds);
-            });
-        }
+            // Funkcja do publikowania wiadomości MQTT
+            function publishMqttMessage(topic, message) {
+                if (isMqttConnected && client) {
+                    client.publish(topic, message.toString(), {}, (err) => { 
+                        if (err) {
+                            appendMqttLog("PUBLISH ERROR", `Błąd publikacji na ${topic}: ${err.message}`, 'error');
+                        } else {
+                            appendMqttLog(topic, message.toString(), 'sent');
+                        }
+                    });
+                } else {
+                    appendMqttLog("MQTT ERROR", "Nie połączono z brokerem MQTT! Wiadomość nie wysłana.", 'error');
+                    console.warn("MQTT client not connected. Message not sent.");
+                }
+            }
+            
+            // Helper function to format seconds into HH:MM:SS
+            function formatTime(totalSeconds) {
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
 
-        if (feedTimeInput && pauseTimeInput) { 
-            feedTimeInput.addEventListener('change', () => {
-                const onTime = parseInt(feedTimeInput.value || 0);
-                const offTime = parseInt(pauseTimeInput.value || 0);
-                sendCommand('set_feed_times', { on: onTime, off: offTime });
-            });
+            // Function to calculate average pellet consumption for a given duration
+            function calculateAverageConsumption(durationMinutes = 60) {
+                if (chartData.pellet_consumption.length === 0) {
+                    return 0.0;
+                }
 
-            pauseTimeInput.addEventListener('change', () => {
-                const onTime = parseInt(feedTimeInput.value || 0);
-                const offTime = parseInt(pauseTimeInput.value || 0);
-                sendCommand('set_feed_times', { on: onTime, off: offTime });
-            });
-        }
-        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
-        // const maintenanceFeedInput = document.getElementById('maintenance-feed'); // USUNIĘTO - TEN KOMENTARZ BYŁ ZAKŁADAŁ, ŻE LINIA PONIŻEJ ZOSTAŁA PRZENIESIONA. TERAZ ZABEZPIECZAM SIĘ PRZED NIĄ.
-        // const maintenancePauseInput = document.getElementById('maintenance-pause'); // USUNIĘTO
-        if (maintenanceFeedInput && maintenancePauseInput) {
-            maintenanceFeedInput.addEventListener('change', () => {
-                const maintenanceOnTime = parseInt(maintenanceFeedInput.value || 0);
-                const maintenanceOffTime = parseInt(maintenancePauseInput.value || 0);
-                sendCommand('set_maintenance_feed_times', { on: maintenanceOnTime, off: maintenanceOffTime });
-            });
+                const now = luxon.DateTime.now();
+                const cutoffTime = now.minus({ minutes: durationMinutes }).toMillis();
 
-            maintenancePauseInput.addEventListener('change', () => {
-                const maintenanceOnTime = parseInt(maintenanceFeedInput.value || 0);
-                const maintenanceOffTime = parseInt(maintenancePauseInput.value || 0);
-                sendCommand('set_maintenance_feed_times', { on: maintenanceOnTime, off: maintenanceOffTime });
-            });
-        }
+                const recentData = chartData.pellet_consumption.filter(point => point.x >= cutoffTime);
 
-        if (blowerManualToggle && blowerManualControlsDiv) {
-            blowerManualToggle.addEventListener('change', () => {
-                const isChecked = blowerManualToggle.checked;
-                sendCommand('set_blower_manual', isChecked);
-                blowerManualControlsDiv.style.display = isChecked ? 'block' : 'none';
-            });
-        }
-        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
-        // if (blowerWorkPowerSlider && blowerWorkPowerDisplay) { // USUNIĘTO - PODOBNIE JAK WYŻEJ
-        //     const blowerWorkPowerSlider = document.getElementById('blower-work-power-slider'); // USUNIĘTO
-        //     const blowerWorkPowerDisplay = document.getElementById('blower-work-power-display'); // USUNIĘTO
-        if (blowerWorkPowerSlider && blowerWorkPowerDisplay) {
-            blowerWorkPowerSlider.addEventListener('input', () => {
-                const value = parseInt(blowerWorkPowerSlider.value);
-                blowerWorkPowerDisplay.textContent = value + '%';
-            });
-            blowerWorkPowerSlider.addEventListener('change', () => {
-                const value = parseInt(blowerWorkPowerSlider.value);
-                sendCommand('set_blower_work_power', value);
-            });
-        }
-        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
-        // if (blowerPurgeManualPowerSlider && blowerPurgeManualPowerDisplay) { // USUNIĘTO
-        //     const blowerPurgeManualPowerSlider = document.getElementById('blower-purge-manual-power-slider'); // USUNIĘTO
-        //     const blowerPurgeManualPowerDisplay = document.getElementById('blower-purge-manual-power-display'); // USUNIĘTO
-        if (blowerPurgeManualPowerSlider && blowerPurgeManualPowerDisplay) {
-            blowerPurgeManualPowerSlider.addEventListener('input', () => {
-                const value = parseInt(blowerPurgeManualPowerSlider.value);
-                blowerPurgeManualPowerDisplay.textContent = value + '%';
-            });
-            blowerPurgeManualPowerSlider.addEventListener('change', () => {
-                const value = parseInt(blowerPurgeManualPowerSlider.value);
-                sendCommand('set_blower_purge_manual_power', value);
-            });
-        }
-        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
-        // if (blowerMaintenanceManualPowerSlider && blowerMaintenanceManualPowerDisplay) { // USUNIĘTO
-        //     const blowerMaintenanceManualPowerSlider = document.getElementById('blower-maintenance-manual-power-slider'); // USUNIĘTO
-        //     const blowerMaintenanceManualPowerDisplay = document.getElementById('blower-maintenance-manual-power-display'); // USUNIĘTO
-        if (blowerMaintenanceManualPowerSlider && blowerMaintenanceManualPowerDisplay) {
-            blowerMaintenanceManualPowerSlider.addEventListener('input', () => { 
-                const value = parseInt(blowerMaintenanceManualPowerSlider.value);
-                blowerMaintenanceManualPowerDisplay.textContent = value + '%';
-            });
-            blowerMaintenanceManualPowerSlider.addEventListener('change', () => { 
-                const value = parseInt(blowerMaintenanceManualPowerSlider.value);
-                sendCommand('set_blower_maintenance_manual_power', value);
-            });
-        }
+                if (recentData.length === 0) {
+                    return 0.0;
+                }
 
-        if (blowerPurgeToggle && blowerPurgeTimesContainer) {
-            blowerPurgeToggle.addEventListener('change', () => {
-                const isChecked = blowerPurgeToggle.checked;
-                sendCommand('set_blower_purge_mode', isChecked);
-                blowerPurgeTimesContainer.style.display = isChecked ? 'flex' : 'none';
-            });
-        }
-        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
-        // if (blowerPurgeOnInput && blowerPurgeOffInput) { // USUNIĘTO
-        //     const blowerPurgeOnInput = document.getElementById('blower-purge-on'); // USUNIĘTO
-        //     const blowerPurgeOffInput = document.getElementById('blower-purge-off'); // USUNIĘTO
-        if (blowerPurgeOnInput && blowerPurgeOffInput) {
-            blowerPurgeOnInput.addEventListener('change', () => {
-                const onTime = parseInt(blowerPurgeOnInput.value || 0);
-                const offTime = parseInt(blowerPurgeOffInput.value || 0);
-                sendCommand('set_blower_purge_times', { on: onTime, off: offTime });
-            });
+                const totalConsumptionRate = recentData.reduce((sum, point) => sum + point.y, 0);
+                return totalConsumptionRate / recentData.length;
+            }
 
-            blowerPurgeOffInput.addEventListener('change', () => {
-                const onTime = parseInt(blowerPurgeOnInput.value || 0);
-                const offTime = parseInt(blowerPurgeOffInput.value || 0);
-                sendCommand('set_blower_purge_times', { on: onTime, off: offTime });
-            });
-        }
+            // Functions to aggregate data for bar charts
+            function aggregateDailyConsumption(history) {
+                const dailyData = new Map(); 
+                const now = luxon.DateTime.now();
+
+                history.forEach(point => {
+                    const dateTime = luxon.DateTime.fromMillis(point.x);
+                    const dateKey = dateTime.toFormat('yyyy-MM-dd');
+                    const consumptionKg = point.y / 60; 
+
+                    if (dailyData.has(dateKey)) {
+                        dailyData.set(dateKey, dailyData.get(dateKey) + consumptionKg);
+                    } else {
+                        dailyData.set(dateKey, consumptionKg);
+                    }
+                });
+
+                const labels = [];
+                const data = [];
+                for (let i = 6; i >= 0; i--) { 
+                    const date = now.minus({ days: i });
+                    const dateKey = date.toFormat('yyyy-MM-dd');
+                    labels.push(date.toFormat('EEE dd.MM')); 
+                    data.push(dailyData.has(dateKey) ? dailyData.get(dateKey) : 0);
+                }
+                return { labels, data };
+            }
+
+            function aggregateMonthlyConsumption(history) {
+                const monthlyData = new Map(); 
+                const now = luxon.DateTime.now();
+
+                history.forEach(point => {
+                    const dateTime = luxon.DateTime.fromMillis(point.x);
+                    const dateKey = dateTime.toFormat('yyyy-MM-dd');
+                    const consumptionKg = point.y / 60;
+
+                    if (monthlyData.has(dateKey)) {
+                        monthlyData.set(dateKey, monthlyData.get(dateKey) + consumptionKg);
+                    } else {
+                        monthlyData.set(dateKey, consumptionKg);
+                    }
+                });
+
+                const labels = [];
+                const data = [];
+                for (let i = 29; i >= 0; i--) { 
+                    const date = now.minus({ days: i });
+                    const dateKey = date.toFormat('dd.MM'); 
+                    labels.push(dateKey); 
+                    data.push(monthlyData.has(dateKey) ? monthlyData.get(dateKey) : 0);
+                }
+                return { labels, data };
+            }
+
+            function aggregateYearlyConsumption(history) {
+                const yearlyData = new Map(); 
+                const now = luxon.DateTime.now();
+
+                history.forEach(point => {
+                    const dateTime = luxon.DateTime.fromMillis(point.x);
+                    const monthKey = dateTime.toFormat('yyyy-MM');
+                    const consumptionKg = point.y / 60;
+
+                    if (yearlyData.has(monthKey)) {
+                        yearlyData.set(monthKey, yearlyData.get(monthKey) + consumptionKg);
+                    } else {
+                        yearlyData.set(monthKey, consumptionKg);
+                    }
+                });
+
+                const labels = [];
+                const data = [];
+                for (let i = 11; i >= 0; i--) { 
+                    const month = now.minus({ months: i }).startOf('month');
+                    const monthKey = month.toFormat('yyyy-MM');
+                    labels.push(month.toFormat('MMM yyyy')); 
+                    data.push(yearlyData.has(monthKey) ? yearlyData.get(monthKey) : 0);
+                }
+                return { labels, data };
+            }
+
+            function aggregateGlobalConsumption(history) {
+                const globalData = new Map(); 
+
+                history.forEach(point => {
+                    const dateTime = luxon.DateTime.fromMillis(point.x);
+                    const yearKey = dateTime.toFormat('yyyy');
+                    const consumptionKg = point.y / 60;
+
+                    if (globalData.has(yearKey)) {
+                        globalData.set(yearKey, globalData.get(yearKey) + consumptionKg);
+                    } else {
+                        globalData.set(yearKey, consumptionKg);
+                    }
+                });
+
+                const sortedYears = Array.from(globalData.keys()).sort();
+                const labels = sortedYears;
+                const data = sortedYears.map(year => globalData.get(year));
+
+                return { labels, data };
+            }
 
 
-        if (resetHistoryBtn && resetPasswordInput) {
-            resetHistoryBtn.addEventListener('click', () => {
-                const password = resetPasswordInput.value;
-                sendCommand('reset_history', password); 
-            });
-        }
+            // Chart.js initialization
+            function initChart(initialHistory = []) {
+                const ctxTemp = document.getElementById('temperature-chart').getContext('2d');
+                const ctxCons = document.getElementById('consumption-chart').getContext('2d');
+                const ctxDailyCons = document.getElementById('daily-consumption-chart').getContext('2d');
+                const ctxMonthlyCons = document.getElementById('monthly-consumption-chart').getContext('2d'); 
+                const ctxYearlyCons = document.getElementById('yearly-consumption-chart').getContext('2d');
+                const ctxGlobalCons = document.getElementById('global-consumption-chart').getContext('2d');
 
-        if (resetSessionUptimeBtn) {
-            resetSessionUptimeBtn.addEventListener('click', () => {
-                sendCommand('reset_session_uptime');
-            });
-        }
+                for (const key in chartData) {
+                    chartData[key] = [];
+                }
 
-        // Chart switching (for temperature chart's individual datasets)
-        document.querySelectorAll('#temperature-chart-toggles .dataset-toggle').forEach(button => { 
-            button.addEventListener('click', function() {
-                const chartType = this.dataset.chart;
-                const datasetIndex = chartDatasetMap[chartType];
+                initialHistory.forEach(point => {
+                    chartData.water_temp.push({ x: point.timestamp_ms, y: point.water_temp });
+                    chartData.room_temp.push({ x: point.timestamp_ms, y: point.room_temp });
+                    chartData.burner_temp.push({ x: point.timestamp_ms, y: point.burner_temp });
+                    chartData.exhaust_temp.push({ x: point.timestamp_ms, y: point.exhaust_temp });
+                    chartData.pellet_consumption.push({ x: point.timestamp_ms, y: point.pellet_consumption_rate });
+                });
+
+                if (temperatureChartInstance) temperatureChartInstance.destroy();
+                if (consumptionChartInstance) consumptionChartInstance.destroy();
+                if (dailyConsumptionChartInstance) dailyConsumptionChartInstance.destroy();
+                if (monthlyConsumptionChartInstance) monthlyConsumptionChartInstance.destroy();
+                if (yearlyConsumptionChartInstance) yearlyConsumptionChartInstance.destroy();
+                if (globalConsumptionChartInstance) globalConsumptionChartInstance.destroy();
+
+                temperatureChartInstance = new Chart(ctxTemp, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.water_temp.map(point => point.x),
+                        datasets: [
+                            { label: 'Temperatura Wody', data: chartData.water_temp, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false },
+                            { label: 'Temperatura Pokojowa', data: chartData.room_temp, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false },
+                            { label: 'Temperatura Palnika', data: chartData.burner_temp, borderColor: '#e74c3c', backgroundColor: 'rgba(231, 76, 60, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false },
+                            { label: 'Temperatura Spalin', data: chartData.exhaust_temp, borderColor: '#f39c12', backgroundColor: 'rgba(243, 156, 18, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { type: 'time', time: { unit: 'minute', tooltipFormat: 'yyyy-MM-dd HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy', year: 'yyyy' } }, title: { display: true, text: 'Czas', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+,
+                            y: { title: { display: true, text: 'Temperatura (°C)', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            zoom: { pan: { enabled: true, mode: 'xy', threshold: 10 }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, drag: { enabled: true, borderColor: 'rgba(52, 152, 219, 0.8)', borderWidth: 2, backgroundColor: 'rgba(52, 152, 219, 0.3)' }, mode: 'xy' } },
+                            tooltip: { mode: 'index', intersect: false, callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) label += context.parsed.y.toFixed(1) + '°C'; return label; } } }
+                        }
+                    }
+                });
+
+                consumptionChartInstance = new Chart(ctxCons, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.pellet_consumption.map(point => point.x),
+                        datasets: [
+                            { label: 'Zużycie Opału (kg/h)', data: chartData.pellet_consumption, borderColor: '#d35400', backgroundColor: 'rgba(211, 84, 0, 0.2)', fill: false, tension: 0.3, pointRadius: 0, hidden: false },
+                            { label: 'Średnie Zużycie (ostatnia godzina)', data: [], borderColor: '#ffeb3b', backgroundColor: 'rgba(255, 235, 59, 0.2)', borderDash: [5, 5], fill: false, tension: 0, pointRadius: 0, hidden: false, yAxisID: 'y' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { type: 'time', time: { unit: 'minute', tooltipFormat: 'yyyy-MM-dd HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy', year: 'yyyy' } }, title: { display: true, text: 'Czas', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+,
+                            y: { title: { display: true, text: 'Zużycie (kg/h)', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            zoom: { pan: { enabled: true, mode: 'xy', threshold: 10 }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, drag: { enabled: true, borderColor: 'rgba(211, 84, 0, 0.8)', borderWidth: 2, backgroundColor: 'rgba(211, 84, 0, 0.3)' }, mode: 'xy' } },
+                            tooltip: { mode: 'index', intersect: false, callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) { if (context.dataset.label === 'Średnie Zużycie (ostatnia godzina)') { const avgConsumptionText = document.getElementById('average-pellet-consumption').textContent; const avgValue = parseFloat(avgConsumptionText); label += avgValue.toFixed(2) + ' kg/h'; } else { label += context.parsed.y.toFixed(2) + ' kg/h'; } } return label; } } }
+                        }
+                    }
+                });
+
+                const commonBarChartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#bbb' }, title: { display: true, text: 'Okres', color: 'white' } },
+                        y: { beginAtZero: true, title: { display: true, text: 'Zużycie (kg)', color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#bbb' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + ' kg'; return label; } } }
+                    }
+                };
+
+                dailyConsumptionChartInstance = new Chart(ctxDailyCons, { type: 'bar', data: { labels: [], datasets: [{ label: 'Zużycie Dzienne', data: [], backgroundColor: 'rgba(211, 84, 0, 0.7)', borderColor: '#d35400', borderWidth: 1 }] }, options: commonBarChartOptions });
+                monthlyConsumptionChartInstance = new Chart(ctxMonthlyCons, { type: 'bar', data: { labels: [], datasets: [{ label: 'Zużycie Miesięczne', data: [], backgroundColor: 'rgba(211, 84, 0, 0.7)', borderColor: '#d35400', borderWidth: 1 }] }, options: commonBarChartOptions });
+                yearlyConsumptionChartInstance = new Chart(ctxYearlyCons, { type: 'bar', data: { labels: [], datasets: [{ label: 'Zużycie Roczne', data: [], backgroundColor: 'rgba(211, 84, 0, 0.7)', borderColor: '#d35400', borderWidth: 1 }] }, options: commonBarChartOptions });
+                globalConsumptionChartInstance = new Chart(ctxGlobalCons, { type: 'bar', data: { labels: [], datasets: [{ label: 'Zużycie Globalne', data: [], backgroundColor: 'rgba(211, 84, 0, 0.7)', borderColor: '#d35400', borderWidth: 1 }] }, options: commonBarChartOptions });
+            }
+
+            // Add a single new data point to the chart
+            function addChartDataPoint(data) {
+                const timestamp = data.timestamp_ms; 
+
+                // Temperature Chart Data
+                chartData.water_temp.push({ x: timestamp, y: data.water_temp });
+                chartData.room_temp.push({ x: timestamp, y: data.room_temp });
+                chartData.burner_temp.push({ x: timestamp, y: data.burner_temp });
+                chartData.exhaust_temp.push({ x: timestamp, y: data.exhaust_temp });
                 
-                if (datasetIndex !== undefined && temperatureChartInstance) { 
-                    const isHidden = temperatureChartInstance.isDatasetVisible(datasetIndex);
-                    temperatureChartInstance.setDatasetVisibility(datasetIndex, !isHidden);
-                    this.classList.toggle('active', !isHidden);
+                // Limit history data points for temperature chart
+                while (chartData.water_temp.length > 200) { // Keep last 200 points (approx 200 minutes)
+                    chartData.water_temp.shift();
+                    chartData.room_temp.shift();
+                    chartData.burner_temp.shift();
+                    chartData.exhaust_temp.shift();
+                }
+
+                if (temperatureChartInstance) { // Dodano sprawdzenie instancji wykresu
+                    temperatureChartInstance.data.labels = chartData.water_temp.map(point => point.x);
+                    temperatureChartInstance.data.datasets[chartDatasetMap['water_temp']].data = chartData.water_temp;
+                    temperatureChartInstance.data.datasets[chartDatasetMap['room_temp']].data = chartData.room_temp;
+                    temperatureChartInstance.data.datasets[chartDatasetMap['burner_temp']].data = chartData.burner_temp;
+                    temperatureChartInstance.data.datasets[chartDatasetMap['exhaust_temp']].data = chartData.exhaust_temp;
                     temperatureChartInstance.update();
                 }
-            });
-        });
 
-        // Chart switching (for main chart types)
-        document.querySelectorAll('#main-chart-switcher .chart-switch').forEach(button => {
-            button.addEventListener('click', function() {
-                const chartType = this.dataset.chartType;
-                document.querySelectorAll('#main-chart-switcher .chart-switch').forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-
-                // Hide all chart containers (added checks for existence)
-                if (chartContainerTemp) chartContainerTemp.style.display = 'none';
-                if (chartContainerConsumption) chartContainerConsumption.style.display = 'none';
-                if (chartContainerDailyConsumption) chartContainerDailyConsumption.style.display = 'none';
-                if (chartContainerMonthlyConsumption) chartContainerMonthlyConsumption.style.display = 'none';
-                if (chartContainerYearlyConsumption) chartContainerYearlyConsumption.style.display = 'none';
-                if (chartContainerGlobalConsumption) chartContainerGlobalConsumption.style.display = 'none';
-
-                // Hide/show temperature toggles (added check for existence)
-                if (temperatureChartToggles) temperatureChartToggles.style.display = 'none';
-
-                // Show the selected chart container and reset zoom for line charts
-                switch (chartType) {
-                    case 'temperature':
-                        if (chartContainerTemp) chartContainerTemp.style.display = 'block';
-                        if (temperatureChartToggles) temperatureChartToggles.style.display = 'flex';
-                        if (temperatureChartInstance) { 
-                            temperatureChartInstance.resetZoom();
-                            temperatureChartInstance.resize();
-                        }
-                        break;
-                    case 'consumption':
-                        if (chartContainerConsumption) chartContainerConsumption.style.display = 'block';
-                        if (consumptionChartInstance) {
-                            consumptionChartInstance.resetZoom();
-                            consumptionChartInstance.resize();
-                        }
-                        break;
-                    case 'daily-consumption':
-                        if (chartContainerDailyConsumption) chartContainerDailyConsumption.style.display = 'block';
-                        if (dailyConsumptionChartInstance) dailyConsumptionChartInstance.resize();
-                        break;
-                    case 'monthly-consumption':
-                        if (chartContainerMonthlyConsumption) chartContainerMonthlyConsumption.style.display = 'block';
-                        if (monthlyConsumptionChartInstance) monthlyConsumptionChartInstance.resize();
-                        break;
-                    case 'yearly-consumption':
-                        if (chartContainerYearlyConsumption) chartContainerYearlyConsumption.style.display = 'block';
-                        if (yearlyConsumptionChartInstance) yearlyConsumptionChartInstance.resize();
-                        break;
-                    case 'global-consumption':
-                        if (chartContainerGlobalConsumption) chartContainerGlobalConsumption.style.display = 'block';
-                        if (globalConsumptionChartInstance) globalConsumptionChartInstance.resize();
-                        break;
+                // Consumption Chart Data
+                chartData.pellet_consumption.push({ x: timestamp, y: data.currentPelletConsumptionRate });
+                
+                // Limit history data points for consumption chart
+                while (chartData.pellet_consumption.length > 200) { // Keep last 200 points
+                    chartData.pellet_consumption.shift();
                 }
-            });
-        });
-
-        // Chart zoom controls (for temperature chart)
-        const zoomInTempBtn = document.getElementById('zoom-in');
-        const zoomOutTempBtn = document.getElementById('zoom-out');
-        const zoomResetTempBtn = document.getElementById('zoom-reset');
-        if (zoomInTempBtn) zoomInTempBtn.addEventListener('click', () => { if (temperatureChartInstance) temperatureChartInstance.zoom(1.1); });
-        if (zoomOutTempBtn) zoomOutTempBtn.addEventListener('click', () => { if (temperatureChartInstance) temperatureChartInstance.zoom(0.9); });
-        if (zoomResetTempBtn) zoomResetTempBtn.addEventListener('click', () => { if (temperatureChartInstance) temperatureChartInstance.resetZoom(); });
-
-        // Zoom controls for consumption chart
-        const zoomInConsBtn = document.getElementById('consumption-zoom-in');
-        const zoomOutConsBtn = document.getElementById('consumption-zoom-out');
-        const zoomResetConsBtn = document.getElementById('consumption-zoom-reset');
-        if (zoomInConsBtn) zoomInConsBtn.addEventListener('click', () => { if (consumptionChartInstance) consumptionChartInstance.zoom(1.1); });
-        if (zoomOutConsBtn) zoomOutConsBtn.addEventListener('click', () => { if (consumptionChartInstance) consumptionChartInstance.zoom(0.9); });
-        if (zoomResetConsBtn) zoomResetConsBtn.addEventListener('click', () => { if (consumptionChartInstance) consumptionChartInstance.resetZoom(); });
-
-        // History range buttons (placeholder for future implementation)
-        historyRangeButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                historyRangeButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                const range = this.dataset.range;
-                console.log(`Selected history range: ${range}`);
-            });
-        });
-
-        // Cost calculation logic
-        function calculateCost() {
-            const price = parseFloat(pelletPriceInput.value || 0); 
-            const actualConsumptionRate = parseFloat(pelletAmount.textContent || 0); 
-            
-            const burnerHoursParts = burnerHoursDisplay.textContent.split(':');
-            let burnerHoursTotal = parseInt(burnerHoursParts[0] || 0) * 60 + parseInt(burnerHoursParts[1] || 0); 
-
-            if (!isNaN(price) && !isNaN(actualConsumptionRate) && !isNaN(burnerHoursTotal)) {
-                const estimatedCost = price * actualConsumptionRate * burnerHoursTotal / 60; // Dziel przez 60, bo burnerHoursTotal jest w minutach
-                if (estimatedCostDisplay) estimatedCostDisplay.textContent = `${estimatedCost.toFixed(2)} PLN`;
-                if (totalCalculatedCost) totalCalculatedCost.textContent = `${estimatedCost.toFixed(2)} PLN`;
-            } else {
-                if (estimatedCostDisplay) estimatedCostDisplay.textContent = `N/A`;
-                if (totalCalculatedCost) totalCalculatedCost.textContent = `N/A`;
+                if (consumptionChartInstance) { // Dodano sprawdzenie instancji wykresu
+                    consumptionChartInstance.data.labels = chartData.pellet_consumption.map(point => point.x);
+                    consumptionChartInstance.data.datasets[0].data = chartData.pellet_consumption;
+                    consumptionChartInstance.update();
+                }
             }
-        }
 
-        if (pelletPriceInput) pelletPriceInput.addEventListener('input', calculateCost);
 
-        // Initial state fetch and MQTT connection
-        document.addEventListener('DOMContentLoaded', () => {
-            // Połączenie/rozłączenie MQTT
-            if (mqttConnectBtn) mqttConnectBtn.addEventListener('click', connectMQTT);
-            if (mqttDisconnectBtn) mqttDisconnectBtn.addEventListener('click', disconnectMQTT);
+            // Update UI based on state
+            function updateUI(data) {
+                console.log("MQTT Data received:", data); // Log the entire data object
 
-            // Inicjalizacja wykresów
-            initChart([]); // Inicjalizuj wykresy po załadowaniu DOM
+                // Dodano sprawdzenia 'if (element)' przed każdą próbą aktualizacji tekstu/klasy/wartości
+                // aby uniknąć błędów, jeśli element nie zostanie znaleziony z jakiegoś powodu.
+                if (waterTempDisplay) waterTempDisplay.textContent = data.water_temp.toFixed(1) + '°C';
+                if (roomTempDisplay) roomTempDisplay.textContent = data.room_temp.toFixed(1) + '°C';
+                if (burnerTempDisplay) burnerTempDisplay.textContent = data.burner_temp.toFixed(1) + '°C';
+                if (exhaustTempDisplay) exhaustTempDisplay.textContent = data.exhaust_temp.toFixed(1) + '°C';
+                if (targetTemp) targetTemp.textContent = data.target_temp.toFixed(0); 
+                if (targetSlider) targetSlider.value = data.target_temp;
+                if (targetDisplay) targetDisplay.textContent = data.target_temp.toFixed(0) + '°C'; 
+                
+                const progress = Math.min(100, (data.water_temp / data.target_temp) * 100);
+                if (waterProgressBar) waterProgressBar.style.width = progress + '%';
+                
+                if (powerBtn) {
+                    if (data.power === "ON") {
+                        powerBtn.innerHTML = '<i class="fas fa-power-off"></i> WŁĄCZONY';
+                        powerBtn.classList.remove('power-off');
+                        powerBtn.classList.add('success');
+                    } else {
+                        powerBtn.innerHTML = '<i class="fas fa-power-off"></i> WYŁĄCZONY';
+                        powerBtn.classList.remove('success');
+                        powerBtn.classList.add('power-off');
+                    }
+                }
+                
+                if (flameIndicator) {
+                    flameIndicator.className = data.flame ? 'flame-indicator on' : 'flame-indicator off';
+                }
+                
+                if (feederStatusIndicatorMini) feederStatusIndicatorMini.className = 'status-indicator ' + (data.feeder_active || data.reverseFeederActive ? 'status-active' : 'status-inactive');
+                if (blowerStatusIndicatorMini) blowerStatusIndicatorMini.className = 'status-indicator ' + (data.blower_active ? 'status-active' : 'status-inactive');
+
+                if (feederStatus && cycleProgressBar && cycleTimer) {
+                    let feederText = "PAUZA";
+                    let progressBarColor = 'var(--feeder-pause-color)';
+                    let totalPhaseDuration = data.currentPhaseDuration;
+                    let remainingTimeInPhase = data.timeRemainingInPhase;
+
+                    // Sprawdź, czy ESP32 wysyła 'feederCycleState', w przeciwnym razie użyj 'feeder_active'
+                    if (data.feederCycleState !== undefined) {
+                        switch (data.feederCycleState) {
+                            case 0: feederText = "PRZERWA"; progressBarColor = 'var(--feeder-pause-color)'; break;
+                            case 1: feederText = "PODAWANIE"; progressBarColor = 'var(--feeder-forward-color)'; break;
+                            case 2: feederText = "KRÓTKA PRZERWA"; progressBarColor = 'var(--feeder-pause-color)'; break;
+                            case 3: feederText = "COFANIE"; progressBarColor = 'var(--feeder-reverse-color)'; break;
+                            default: feederText = "NIEZNANY"; progressBarColor = 'var(--feeder-pause-color)'; break;
+                        }
+                    } else {
+                        feederText = data.feeder_active ? "PODAWANIE" : "PRZERWA";
+                        progressBarColor = data.feeder_active ? 'var(--feeder-forward-color)' : 'var(--feeder-pause-color)';
+                    }
+                    
+                    feederStatus.innerHTML = `<span class="status-indicator ${data.feeder_active || data.reverseFeederActive ? 'status-active' : 'status-inactive'}"></span> PODAJNIK: ${feederText}`;
+                    feederStatus.classList.toggle('on', data.feeder_active || data.reverseFeederActive);
+                    feederStatus.classList.toggle('off', !(data.feeder_active || data.reverseFeederActive));
+
+                    const progressPercentage = totalPhaseDuration > 0 ? ((totalPhaseDuration - remainingTimeInPhase) / totalPhaseDuration) * 100 : 0;
+                    cycleProgressBar.style.width = `${progressPercentage}%`;
+                    cycleProgressBar.style.background = progressBarColor;
+
+                    cycleTimer.textContent = `${remainingTimeInPhase}s do końca`;
+                }
+
+                if (pelletAmount) {
+                    pelletAmount.textContent = data.currentPelletConsumptionRate.toFixed(2);
+                }
+
+                const avgConsumption = calculateAverageConsumption(60); 
+                if (averagePelletConsumptionDisplay) averagePelletConsumptionDisplay.textContent = avgConsumption.toFixed(2) + 'kg/h';
+
+                if (maintenanceStatus && maintenanceStatusBadge) {
+                    maintenanceStatus.textContent = data.maintenance_mode ? "AKTYWNY" : "NIEAKTYWNY";
+                    maintenanceStatus.classList.toggle('maintenance-active', data.maintenance_mode);
+                    maintenanceStatus.classList.toggle('maintenance-inactive', !data.maintenance_mode);
+                    maintenanceStatusBadge.className = 'status-badge ' + (data.maintenance_mode ? 'status-good' : 'status-error');
+                }
+                
+                if (ashCleaningStatus && cleaningStatusBadge) {
+                    ashCleaningStatus.textContent = data.ash_cleaning ? "AKTYWNE" : "NIE";
+                    cleaningStatusBadge.className = 'status-badge ' + (data.ash_cleaning ? 'status-warning' : 'status-good');
+                }
+
+                if (igniterTempDisplay) igniterTempDisplay.textContent = data.igniterTemp ? `${data.igniterTemp.toFixed(1)}°C` : 'N/A';
+                if (igniterStatusText) igniterStatusText.textContent = data.igniterState;
+                if (igniterStatusText) igniterStatusText.className = `ignition-status ${data.igniterState}`; 
+
+                if (igniterIndicator) { 
+                    if (data.igniterState === 'heating' || data.igniterState === 'ready') {
+                        igniterIndicator.style.display = 'flex';
+                        igniterIndicator.className = `igniter-indicator ${data.igniterState}`;
+                    } else {
+                        igniterIndicator.style.display = 'none';
+                    }
+                }
+                
+                if (feedTimeInput && data.feedOnTime !== undefined) feedTimeInput.value = data.feedOnTime;
+                if (pauseTimeInput && data.feedOffTime !== undefined) pauseTimeInput.value = data.feedOffTime;
+                // Sprawdzenie istnienia dla nowo dodanych zmiennych
+                if (maintenanceFeedInput && data.maintenanceFeedOnTime !== undefined) maintenanceFeedInput.value = data.maintenanceFeedOnTime;
+                if (maintenancePauseInput && data.maintenanceFeedOffTime !== undefined) maintenancePauseInput.value = data.maintenanceFeedOffTime;
+                
+                if (blowerManualToggle && data.blowerManualControl !== undefined) blowerManualToggle.checked = data.blowerManualControl;
+                if (blowerManualControlsDiv) blowerManualControlsDiv.style.display = data.blowerManualControl ? 'block' : 'none';
+
+                if (blowerWorkPowerSlider && blowerWorkPowerDisplay && data.blowerWorkPower !== undefined) {
+                    blowerWorkPowerSlider.value = data.blowerWorkPower;
+                    blowerWorkPowerDisplay.textContent = `${data.blowerWorkPower}%`;
+                }
+                if (blowerPurgeManualPowerSlider && blowerPurgeManualPowerDisplay && data.blowerPurgeManualPower !== undefined) {
+                    blowerPurgeManualPowerSlider.value = data.blowerPurgeManualPower;
+                    blowerPurgeManualPowerDisplay.textContent = `${data.blowerPurgeManualPower}%`;
+                }
+                if (blowerMaintenanceManualPowerSlider && blowerMaintenanceManualPowerDisplay && data.blowerMaintenanceManualPower !== undefined) {
+                    blowerMaintenanceManualPowerSlider.value = data.blowerMaintenanceManualPower;
+                    blowerMaintenanceManualPowerDisplay.textContent = `${data.blowerMaintenanceManualPower}%`;
+                }
+
+                if (blowerPowerSlider && blowerPowerDisplay && data.effectiveBlowerPower !== undefined) {
+                    blowerPowerSlider.value = data.effectiveBlowerPower;
+                    blowerPowerDisplay.textContent = `${data.effectiveBlowerPower}%`;
+                }
+
+                if (blowerPurgeToggle && data.blowerPurgeMode !== undefined) blowerPurgeToggle.checked = data.blowerPurgeMode;
+                if (blowerPurgeTimesContainer) blowerPurgeTimesContainer.style.display = data.blowerPurgeMode ? 'flex' : 'none';
+                if (blowerPurgeOnInput && data.blowerPurgeOnTime !== undefined) blowerPurgeOnInput.value = data.blowerPurgeOnTime;
+                if (blowerPurgeOffInput && data.blowerPurgeOffTime !== undefined) blowerPurgeOffInput.value = data.blowerPurgeOffTime; 
+
+                if (sessionUptimeDisplay) sessionUptimeDisplay.textContent = formatTime(data.session_uptime);
+                if (totalUptimeDisplay) totalUptimeDisplay.textContent = formatTime(data.total_uptime);
+
+                if (rssi) rssi.textContent = `${data.rssi}dBm`;
+                if (ipAddr) ipAddr.textContent = data.ip || "0.0.0.0"; // IP address from ESP32
+
+                // MQTT status from ESP32 perspective
+                if (data.mqtt_connected !== undefined) {
+                    if (data.mqtt_connected) {
+                        if (mqttStatusText) mqttStatusText.textContent = "Połączono";
+                        if (mqttStatusIndicator) {
+                            mqttStatusIndicator.classList.remove('mqtt-disconnected');
+                            mqttStatusIndicator.classList.add('connected');
+                        }
+                    } else {
+                        if (mqttStatusText) mqttStatusText.textContent = "Brak połączenia";
+                        if (mqttStatusIndicator) {
+                            mqttStatusIndicator.classList.remove('connected');
+                            mqttStatusIndicator.classList.add('disconnected');
+                        }
+                    }
+                } else { 
+                    updateMqttStatus(isMqttConnected);
+                }
+                
+                if (temperatureChartInstance && consumptionChartInstance && data.timestamp_ms) {
+                    addChartDataPoint(data);
+                    if (chartData.pellet_consumption.length > 0) {
+                        const firstTimestamp = chartData.pellet_consumption[0].x;
+                        const lastTimestamp = chartData.pellet_consumption[chartData.pellet_consumption.length - 1].x;
+
+                        const avgCons = calculateAverageConsumption(60); // Ponownie oblicz średnie zużycie
+                        consumptionChartInstance.data.datasets[1].data = [
+                            { x: firstTimestamp, y: avgCons },
+                            { x: lastTimestamp, y: avgCons }
+                        ];
+                        consumptionChartInstance.update();
+                    }
+                } else {
+                    console.warn("Chart not initialized or timestamp missing, skipping addChartDataPoint.");
+                }
+                // Aktualizacja wykresów słupkowych
+                const dailyData = aggregateDailyConsumption(chartData.pellet_consumption);
+                if (dailyConsumptionChartInstance) {
+                    dailyConsumptionChartInstance.data.labels = dailyData.labels;
+                    dailyConsumptionChartInstance.data.datasets[0].data = dailyData.data;
+                    dailyConsumptionChartInstance.update();
+                }
+
+                const monthlyData = aggregateMonthlyConsumption(chartData.pellet_consumption);
+                if (monthlyConsumptionChartInstance) {
+                    monthlyConsumptionChartInstance.data.labels = monthlyData.labels;
+                    monthlyConsumptionChartInstance.data.datasets[0].data = monthlyData.data;
+                    monthlyConsumptionChartInstance.update();
+                }
+
+                const yearlyData = aggregateYearlyConsumption(chartData.pellet_consumption);
+                if (yearlyConsumptionChartInstance) {
+                    yearlyConsumptionChartInstance.data.labels = yearlyData.labels;
+                    yearlyConsumptionChartInstance.data.datasets[0].data = yearlyData.data;
+                    yearlyConsumptionChartInstance.update();
+                }
+
+                const globalData = aggregateGlobalConsumption(chartData.pellet_consumption);
+                if (globalConsumptionChartInstance) {
+                    globalConsumptionChartInstance.data.labels = globalData.labels;
+                    globalConsumptionChartInstance.data.datasets[0].data = globalData.data;
+                    globalConsumptionChartInstance.update();
+                }
+
+
+                // --- POCZĄTEK FRAGMENTU POWODUJĄCEGO BŁĄD 'burnerHours' ---
+                // Ten fragment musi być wewnątrz sprawdzenia, czy burnerHoursDisplay istnieje i ma textContent
+                if (burnerHoursDisplay && burnerHoursDisplay.textContent) { 
+                    const currentBurnerHoursParts = burnerHoursDisplay.textContent.split(':');
+                    let currentBurnerMinutes = parseInt(currentBurnerHoursParts[0] || 0) * 60 + parseInt(currentBurnerHoursParts[1] || 0);
+                    
+                    if (data.flame && data.power === "ON") { 
+                        currentBurnerMinutes += (1/60); // Zaktualizuj minuty, jeśli płomień jest aktywny i piec jest ON
+                    }
+                    const newBurnerHours = Math.floor(currentBurnerMinutes / 60);
+                    const newBurnerMinutes = Math.floor(currentBurnerMinutes % 60);
+                    burnerHoursDisplay.textContent = `${newBurnerHours.toString().padStart(2, '0')}:${newBurnerMinutes.toString().padStart(2, '0')}`;
+                } else {
+                    // Loguj ostrzeżenie, jeśli element nie jest znaleziony, ale nie przerywaj skryptu
+                    console.warn("Element 'burner-hours' not found or textContent not ready for update.");
+                }
+                // --- KONIEC FRAGMENTU POWODUJĄCEGO BŁĄD ---
+
+                calculateCost(); 
+
+                const efficiency = Math.min(100, (data.water_temp / 85) * 100).toFixed(0);
+                if (efficiencyFill) efficiencyFill.style.width = `${efficiency}%`;
+                if (efficiencyLabel) efficiencyLabel.textContent = `${efficiency}% Wydajność`;
+
+                if (cleanCountdownDisplay && data.time_to_clean !== undefined) {
+                    const cleanHours = Math.floor(data.time_to_clean / 3600);
+                    const cleanMinutes = Math.floor((data.time_to_clean % 3600) / 60);
+                    const cleanSeconds = Math.floor(data.time_to_clean % 60);
+                    cleanCountdownDisplay.textContent = 
+                        `${cleanHours.toString().padStart(2, '0')}:${cleanMinutes.toString().padStart(2, '0')}:${cleanSeconds.toString().padStart(2, '0')}`;
+                }
+            }
+            
+            // --- Wysyłanie komand do ESP32 (teraz przez MQTT) ---
+            function sendCommand(cmd, value = null) {
+                const payload = value !== null ? {command: cmd, value: value} : {command: cmd};
+                
+                if (client && client.connected) {
+                    publishMqttMessage(MQTT_TOPICS.control, JSON.stringify(payload));
+                } else {
+                    appendMqttLog("ERROR", "Nie połączono z brokerem MQTT, komenda nie wysłana!", 'error');
+                    console.error("MQTT client not connected, command not sent via MQTT.");
+                }
+                
+                if (cmd === 'reset_history') {
+                    if (resetMessageDiv) {
+                        resetMessageDiv.textContent = 'Komenda resetowania danych wysłana. Odśwież stronę po chwili.';
+                        resetMessageDiv.style.color = 'var(--warning)';
+                    }
+                } else if (cmd === 'reset_session_uptime') {
+                    console.log('Komenda resetowania czasu pracy sesji wysłana.');
+                }
+            }
+            
+            // --- Event Handlers ---
+            // Zapewnienie, że elementy istnieją przed dodaniem EventListener
+            const autoCleanToggle = document.getElementById('auto-clean-toggle');
+            if (autoCleanToggle) {
+                autoCleanToggle.addEventListener('change', () => {
+                    sendCommand('autoclean', autoCleanToggle.checked);
+                });
+            }
+
+            if (powerBtn) {
+                powerBtn.addEventListener('click', () => {
+                    const currentStateText = powerBtn.textContent.trim();
+                    let newPowerState;
+                    if (currentStateText.includes("WŁĄCZONY")) {
+                        newPowerState = "OFF";
+                    } else {
+                        newPowerState = "ON";
+                    }
+                    publishMqttMessage(MQTT_TOPICS.power, newPowerState);
+                });
+            }
+            
+            if (targetSlider) {
+                targetSlider.addEventListener('input', () => {
+                    const value = parseInt(targetSlider.value);
+                    if (targetDisplay) targetDisplay.textContent = value + '°C';
+                    publishMqttMessage(MQTT_TOPICS.targetTemp, value.toString());
+                });
+            }
+
+            if (ashBtn) {
+                ashBtn.addEventListener('click', () => {
+                    sendCommand('clean');
+                });
+            }
+            
+            if (updateCleanBtn) {
+                updateCleanBtn.addEventListener('click', () => {
+                    const hours = parseInt(cleanHoursInput.value || 0); 
+                    const minutes = parseInt(cleanMinutesInput.value || 0);
+                    const seconds = parseInt(cleanSecondsInput.value || 0);
+                    const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                    sendCommand('set_clean_time', totalSeconds);
+                });
+            }
+
+            if (feedTimeInput && pauseTimeInput) { 
+                feedTimeInput.addEventListener('change', () => {
+                    const onTime = parseInt(feedTimeInput.value || 0);
+                    const offTime = parseInt(pauseTimeInput.value || 0);
+                    sendCommand('set_feed_times', { on: onTime, off: offTime });
+                });
+
+                pauseTimeInput.addEventListener('change', () => {
+                    const onTime = parseInt(feedTimeInput.value || 0);
+                    const offTime = parseInt(pauseTimeInput.value || 0);
+                    sendCommand('set_feed_times', { on: onTime, off: offTime });
+                });
+            }
+            
+            if (maintenanceFeedInput && maintenancePauseInput) {
+                maintenanceFeedInput.addEventListener('change', () => {
+                    const maintenanceOnTime = parseInt(maintenanceFeedInput.value || 0);
+                    const maintenanceOffTime = parseInt(maintenancePauseInput.value || 0);
+                    sendCommand('set_maintenance_feed_times', { on: maintenanceOnTime, off: maintenanceOffTime });
+                });
+
+                maintenancePauseInput.addEventListener('change', () => {
+                    const maintenanceOnTime = parseInt(maintenanceFeedInput.value || 0);
+                    const maintenanceOffTime = parseInt(maintenancePauseInput.value || 0);
+                    sendCommand('set_maintenance_feed_times', { on: maintenanceOnTime, off: maintenanceOffTime });
+                });
+            }
+
+            if (blowerManualToggle && blowerManualControlsDiv) {
+                blowerManualToggle.addEventListener('change', () => {
+                    const isChecked = blowerManualToggle.checked;
+                    sendCommand('set_blower_manual', isChecked);
+                    blowerManualControlsDiv.style.display = isChecked ? 'block' : 'none';
+                });
+            }
+            
+            if (blowerWorkPowerSlider && blowerWorkPowerDisplay) {
+                blowerWorkPowerSlider.addEventListener('input', () => {
+                    const value = parseInt(blowerWorkPowerSlider.value);
+                    blowerWorkPowerDisplay.textContent = value + '%';
+                });
+                blowerWorkPowerSlider.addEventListener('change', () => {
+                    const value = parseInt(blowerWorkPowerSlider.value);
+                    sendCommand('set_blower_work_power', value);
+                });
+            }
+            
+            if (blowerPurgeManualPowerSlider && blowerPurgeManualPowerDisplay) {
+                blowerPurgeManualPowerSlider.addEventListener('input', () => {
+                    const value = parseInt(blowerPurgeManualPowerSlider.value);
+                    blowerPurgeManualPowerDisplay.textContent = value + '%';
+                });
+                blowerPurgeManualPowerSlider.addEventListener('change', () => {
+                    const value = parseInt(blowerPurgeManualPowerSlider.value);
+                    sendCommand('set_blower_purge_manual_power', value);
+                });
+            }
+            
+            if (blowerMaintenanceManualPowerSlider && blowerMaintenanceManualPowerDisplay) {
+                blowerMaintenanceManualPowerSlider.addEventListener('input', () => { 
+                    const value = parseInt(blowerMaintenanceManualPowerSlider.value);
+                    blowerMaintenanceManualPowerDisplay.textContent = value + '%';
+                });
+                blowerMaintenanceManualPowerSlider.addEventListener('change', () => { 
+                    const value = parseInt(blowerMaintenanceManualPowerSlider.value);
+                    sendCommand('set_blower_maintenance_manual_power', value);
+                });
+            }
+
+            if (blowerPurgeToggle && blowerPurgeTimesContainer) {
+                blowerPurgeToggle.addEventListener('change', () => {
+                    const isChecked = blowerPurgeToggle.checked;
+                    sendCommand('set_blower_purge_mode', isChecked);
+                    blowerPurgeTimesContainer.style.display = isChecked ? 'flex' : 'none';
+                });
+            }
+            
+            if (blowerPurgeOnInput && blowerPurgeOffInput) {
+                blowerPurgeOnInput.addEventListener('change', () => {
+                    const onTime = parseInt(blowerPurgeOnInput.value || 0);
+                    const offTime = parseInt(blowerPurgeOffInput.value || 0);
+                    sendCommand('set_blower_purge_times', { on: onTime, off: offTime });
+                });
+
+                blowerPurgeOffInput.addEventListener('change', () => {
+                    const onTime = parseInt(blowerPurgeOnInput.value || 0);
+                    const offTime = parseInt(blowerPurgeOffInput.value || 0);
+                    sendCommand('set_blower_purge_times', { on: onTime, off: offTime });
+                });
+            }
+
+
+            if (resetHistoryBtn && resetPasswordInput) {
+                resetHistoryBtn.addEventListener('click', () => {
+                    const password = resetPasswordInput.value;
+                    sendCommand('reset_history', password); 
+                });
+            }
+
+            if (resetSessionUptimeBtn) {
+                resetSessionUptimeBtn.addEventListener('click', () => {
+                    sendCommand('reset_session_uptime');
+                });
+            }
+
+            // Chart switching (for temperature chart's individual datasets)
+            document.querySelectorAll('#temperature-chart-toggles .dataset-toggle').forEach(button => { 
+                button.addEventListener('click', function() {
+                    const chartType = this.dataset.chart;
+                    const datasetIndex = chartDatasetMap[chartType];
+                    
+                    if (datasetIndex !== undefined && temperatureChartInstance) { 
+                        const isHidden = temperatureChartInstance.isDatasetVisible(datasetIndex);
+                        temperatureChartInstance.setDatasetVisibility(datasetIndex, !isHidden);
+                        this.classList.toggle('active', !isHidden);
+                        temperatureChartInstance.update();
+                    }
+                });
+            });
+
+            // Chart switching (for main chart types)
+            document.querySelectorAll('#main-chart-switcher .chart-switch').forEach(button => {
+                button.addEventListener('click', function() {
+                    const chartType = this.dataset.chartType;
+                    document.querySelectorAll('#main-chart-switcher .chart-switch').forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Hide all chart containers (added checks for existence)
+                    if (chartContainerTemp) chartContainerTemp.style.display = 'none';
+                    if (chartContainerConsumption) chartContainerConsumption.style.display = 'none';
+                    if (chartContainerDailyConsumption) chartContainerDailyConsumption.style.display = 'none';
+                    if (chartContainerMonthlyConsumption) chartContainerMonthlyConsumption.style.display = 'none';
+                    if (chartContainerYearlyConsumption) chartContainerYearlyConsumption.style.display = 'none';
+                    if (chartContainerGlobalConsumption) chartContainerGlobalConsumption.style.display = 'none';
+
+                    // Hide/show temperature toggles (added check for existence)
+                    if (temperatureChartToggles) temperatureChartToggles.style.display = 'none';
+
+                    // Show the selected chart container and reset zoom for line charts
+                    switch (chartType) {
+                        case 'temperature':
+                            if (chartContainerTemp) chartContainerTemp.style.display = 'block';
+                            if (temperatureChartToggles) temperatureChartToggles.style.display = 'flex';
+                            if (temperatureChartInstance) { 
+                                temperatureChartInstance.resetZoom();
+                                temperatureChartInstance.resize();
+                            }
+                            break;
+                        case 'consumption':
+                            if (chartContainerConsumption) chartContainerConsumption.style.display = 'block';
+                            if (consumptionChartInstance) {
+                                consumptionChartInstance.resetZoom();
+                                consumptionChartInstance.resize();
+                            }
+                            break;
+                        case 'daily-consumption':
+                            if (chartContainerDailyConsumption) chartContainerDailyConsumption.style.display = 'block';
+                            if (dailyConsumptionChartInstance) dailyConsumptionChartInstance.resize();
+                            break;
+                        case 'monthly-consumption':
+                            if (chartContainerMonthlyConsumption) chartContainerMonthlyConsumption.style.display = 'block';
+                            if (monthlyConsumptionChartInstance) monthlyConsumptionChartInstance.resize();
+                            break;
+                        case 'yearly-consumption':
+                            if (chartContainerYearlyConsumption) chartContainerYearlyConsumption.style.display = 'block';
+                            if (yearlyConsumptionChartInstance) yearlyConsumptionChartInstance.resize();
+                            break;
+                        case 'global-consumption':
+                            if (chartContainerGlobalConsumption) chartContainerGlobalConsumption.style.display = 'block';
+                            if (globalConsumptionChartInstance) globalConsumptionChartInstance.resize();
+                            break;
+                    }
+                });
+            });
+
+            // Chart zoom controls (for temperature chart)
+            const zoomInTempBtn = document.getElementById('zoom-in');
+            const zoomOutTempBtn = document.getElementById('zoom-out');
+            const zoomResetTempBtn = document.getElementById('zoom-reset');
+            if (zoomInTempBtn) zoomInTempBtn.addEventListener('click', () => { if (temperatureChartInstance) temperatureChartInstance.zoom(1.1); });
+            if (zoomOutTempBtn) zoomOutTempBtn.addEventListener('click', () => { if (temperatureChartInstance) temperatureChartInstance.zoom(0.9); });
+            if (zoomResetTempBtn) zoomResetTempBtn.addEventListener('click', () => { if (temperatureChartInstance) temperatureChartInstance.resetZoom(); });
+
+            // Zoom controls for consumption chart
+            const zoomInConsBtn = document.getElementById('consumption-zoom-in');
+            const zoomOutConsBtn = document.getElementById('consumption-zoom-out');
+            const zoomResetConsBtn = document.getElementById('consumption-zoom-reset');
+            if (zoomInConsBtn) zoomInConsBtn.addEventListener('click', () => { if (consumptionChartInstance) consumptionChartInstance.zoom(1.1); });
+            if (zoomOutConsBtn) zoomOutConsBtn.addEventListener('click', () => { if (consumptionChartInstance) consumptionChartInstance.zoom(0.9); });
+            if (zoomResetConsBtn) zoomResetConsBtn.addEventListener('click', () => { if (consumptionChartInstance) consumptionChartInstance.resetZoom(); });
+
+            // History range buttons (placeholder for future implementation)
+            historyRangeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    historyRangeButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    const range = this.dataset.range;
+                    console.log(`Selected history range: ${range}`);
+                });
+            });
+
+            // Cost calculation logic
+            function calculateCost() {
+                const price = parseFloat(pelletPriceInput.value || 0); 
+                const actualConsumptionRate = parseFloat(pelletAmount.textContent || 0); 
+                
+                const burnerHoursParts = burnerHoursDisplay.textContent.split(':');
+                let burnerHoursTotal = parseInt(burnerHoursParts[0] || 0) * 60 + parseInt(burnerHoursParts[1] || 0); 
+
+                if (!isNaN(price) && !isNaN(actualConsumptionRate) && !isNaN(burnerHoursTotal)) {
+                    const estimatedCost = price * actualConsumptionRate * burnerHoursTotal / 60; // Dziel przez 60, bo burnerHoursTotal jest w minutach
+                    if (estimatedCostDisplay) estimatedCostDisplay.textContent = `${estimatedCost.toFixed(2)} PLN`;
+                    if (totalCalculatedCost) totalCalculatedCost.textContent = `${estimatedCost.toFixed(2)} PLN`;
+                } else {
+                    if (estimatedCostDisplay) estimatedCostDisplay.textContent = `N/A`;
+                    if (totalCalculatedCost) totalCalculatedCost.textContent = `N/A`;
+                }
+            }
+
+            if (pelletPriceInput) pelletPriceInput.addEventListener('input', calculateCost);
 
             // AUTOMATYCZNE POŁĄCZENIE MQTT PO ZAŁADOWANIU STRONY (dla połączenia internetowego)
             connectMQTT();
