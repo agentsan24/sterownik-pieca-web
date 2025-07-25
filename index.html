@@ -633,9 +633,9 @@
         const chartContainerTemp = document.getElementById('chart-container-temp');
         const chartContainerConsumption = document.getElementById('chart-container-consumption');
         const chartContainerDailyConsumption = document.getElementById('chart-container-daily-consumption');
-        const chartContainerMonthlyConsumption = document.getElementById('chart-container-monthly-consumption');
+        const chartContainerMonthlyConsumption = document.getElementById('monthly-consumption-chart');
         const chartContainerYearlyConsumption = document.getElementById('chart-container-yearly-consumption');
-        const chartContainerGlobalConsumption = document.getElementById('chart-container-global-consumption');
+        const chartContainerGlobalConsumption = document.getElementById('global-consumption-chart');
         const historyRangeButtons = document.querySelectorAll('.history-btn');
 
 
@@ -981,7 +981,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { type: 'time', time: { unit: 'minute', tooltipFormat: 'yyyy-MM-dd HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy', year: 'yyyy' } }, title: { display: true, text: 'Czas', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { type: 'time', time: { unit: 'minute', tooltipFormat: 'yyyy-MM-dd HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy', year: 'yyyy' } }, title: { display: true, text: 'Czas', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+,
                         y: { title: { display: true, text: 'Temperatura (°C)', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
                     },
                     plugins: {
@@ -1528,37 +1529,9 @@
             mqttConnectBtn.addEventListener('click', connectMQTT);
             mqttDisconnectBtn.addEventListener('click', disconnectMQTT);
 
-            // Wywołaj funkcję pobierającą historię i stan raz na początku
-            // UWAGA: Te wywołania fetch('/history') i fetch('/state') próbują pobrać dane z lokalnego serwera ESP32
-            // Jeśli ESP32 nie ma zaimplementowanych endpointów /history i /state, to te wywołania zawiodą.
-            // Są one pozostałością po wcześniejszej architekturze.
-            // Jeśli chcesz polegać WYŁĄCZNIE na MQTT, możesz usunąć te bloki fetch.
-            fetch('/history')
-                .then(r => r.json())
-                .then(historyData => {
-                    initChart(historyData);
-                    return fetch('/state');
-                })
-                .then(r => r.json())
-                .then(data => {
-                    updateUI(data);
-                    // connectMQTT(); // Możesz odkomentować, jeśli chcesz auto-połączenie MQTT
-                })
-                .catch(e => {
-                    console.error('Błąd pobierania początkowego stanu lub historii:', e);
-                    initChart([]); // Wyczyść dane wykresu w przypadku błędu
-                    // connectMQTT(); // Nadal spróbuj połączyć się z MQTT, jeśli poprzednie kroki zawiodły
-                });
-            
-            // Okresowe odświeżanie stanu przez HTTP (jako uzupełnienie/fallback dla MQTT)
-            // To również jest pozostałością po poprzedniej architekturze HTTP.
-            // Jeśli chcesz polegać WYŁĄCZNIE na MQTT, możesz usunąć ten setInterval.
-            setInterval(() => {
-                fetch('/state')
-                    .then(r => r.json())
-                    .then(updateUI)
-                    .catch(e => console.error('Błąd aktualizacji stanu HTTP:', e));
-            }, 3000); // Co 3 sekundy
+            // ZAKOMENTOWANE: Usunięto wywołania fetch('/history') i fetch('/state') oraz setInterval,
+            // ponieważ aplikacja webowa ma polegać WYŁĄCZNIE na komunikacji MQTT.
+            // Te wywołania próbowałyby łączyć się lokalnie z ESP32, co nie działa, gdy strona jest na GitHub Pages.
 
             // AUTOMATYCZNE POŁĄCZENIE MQTT PO ZAŁADOWANIU STRONY (dla połączenia internetowego)
             // Uruchomienie połączenia MQTT po załadowaniu strony
