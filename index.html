@@ -1324,7 +1324,7 @@
             let currentBurnerMinutes = parseInt(currentBurnerHoursParts[0] || 0) * 60 + parseInt(currentBurnerHoursParts[1] || 0);
             
             if (data.flame && data.power === "ON") { 
-                currentBurnerMinutes += (1/60); // Zaktualizuj minuty, jeśli płomień jest aktywny i piec jest ON
+                currentBurnerMinutes += (1/60); // Zaktualizuj minity, jeśli płomień jest aktywny i piec jest ON
             }
             const newBurnerHours = Math.floor(currentBurnerMinutes / 60);
             const newBurnerMinutes = Math.floor(currentBurnerMinutes % 60);
@@ -1425,9 +1425,9 @@
                 sendCommand('set_feed_times', { on: onTime, off: offTime });
             });
         }
-        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów maintenanceFeedInput, maintenancePauseInput
-        const maintenanceFeedInput = document.getElementById('maintenance-feed');
-        const maintenancePauseInput = document.getElementById('maintenance-pause');
+        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
+        // const maintenanceFeedInput = document.getElementById('maintenance-feed'); // USUNIĘTO
+        // const maintenancePauseInput = document.getElementById('maintenance-pause'); // USUNIĘTO
         if (maintenanceFeedInput && maintenancePauseInput) {
             maintenanceFeedInput.addEventListener('change', () => {
                 const maintenanceOnTime = parseInt(maintenanceFeedInput.value || 0);
@@ -1449,7 +1449,10 @@
                 blowerManualControlsDiv.style.display = isChecked ? 'block' : 'none';
             });
         }
-        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów blowerWorkPowerSlider, blowerWorkPowerDisplay
+        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
+        // if (blowerWorkPowerSlider && blowerWorkPowerDisplay) { // USUNIĘTO
+        //     const blowerWorkPowerSlider = document.getElementById('blower-work-power-slider'); // USUNIĘTO
+        //     const blowerWorkPowerDisplay = document.getElementById('blower-work-power-display'); // USUNIĘTO
         if (blowerWorkPowerSlider && blowerWorkPowerDisplay) {
             blowerWorkPowerSlider.addEventListener('input', () => {
                 const value = parseInt(blowerWorkPowerSlider.value);
@@ -1460,7 +1463,10 @@
                 sendCommand('set_blower_work_power', value);
             });
         }
-        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów blowerPurgeManualPowerSlider, blowerPurgeManualPowerDisplay
+        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
+        // if (blowerPurgeManualPowerSlider && blowerPurgeManualPowerDisplay) { // USUNIĘTO
+        //     const blowerPurgeManualPowerSlider = document.getElementById('blower-purge-manual-power-slider'); // USUNIĘTO
+        //     const blowerPurgeManualPowerDisplay = document.getElementById('blower-purge-manual-power-display'); // USUNIĘTO
         if (blowerPurgeManualPowerSlider && blowerPurgeManualPowerDisplay) {
             blowerPurgeManualPowerSlider.addEventListener('input', () => {
                 const value = parseInt(blowerPurgeManualPowerSlider.value);
@@ -1471,7 +1477,10 @@
                 sendCommand('set_blower_purge_manual_power', value);
             });
         }
-        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów blowerMaintenanceManualPowerSlider, blowerMaintenanceManualPowerDisplay
+        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
+        // if (blowerMaintenanceManualPowerSlider && blowerMaintenanceManualPowerDisplay) { // USUNIĘTO
+        //     const blowerMaintenanceManualPowerSlider = document.getElementById('blower-maintenance-manual-power-slider'); // USUNIĘTO
+        //     const blowerMaintenanceManualPowerDisplay = document.getElementById('blower-maintenance-manual-power-display'); // USUNIĘTO
         if (blowerMaintenanceManualPowerSlider && blowerMaintenanceManualPowerDisplay) {
             blowerMaintenanceManualPowerSlider.addEventListener('input', () => { 
                 const value = parseInt(blowerMaintenanceManualPowerSlider.value);
@@ -1490,7 +1499,10 @@
                 blowerPurgeTimesContainer.style.display = isChecked ? 'flex' : 'none';
             });
         }
-        // POPRAWKA: Dodano sprawdzenia dla istnienia elementów blowerPurgeOnInput, blowerPurgeOffInput
+        // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
+        // if (blowerPurgeOnInput && blowerPurgeOffInput) { // USUNIĘTO
+        //     const blowerPurgeOnInput = document.getElementById('blower-purge-on'); // USUNIĘTO
+        //     const blowerPurgeOffInput = document.getElementById('blower-purge-off'); // USUNIĘTO
         if (blowerPurgeOnInput && blowerPurgeOffInput) {
             blowerPurgeOnInput.addEventListener('change', () => {
                 const onTime = parseInt(blowerPurgeOnInput.value || 0);
