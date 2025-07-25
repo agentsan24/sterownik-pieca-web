@@ -588,8 +588,8 @@
 
         const feedTimeInput = document.getElementById('feed-time');
         const pauseTimeInput = document.getElementById('pause-time');
-        const maintenanceFeedInput = document.getElementById('maintenance-feed'); // NOWE: Dodano pobieranie elementu
-        const maintenancePauseInput = document.getElementById('maintenance-pause'); // NOWE: Dodano pobieranie elementu
+        const maintenanceFeedInput = document.getElementById('maintenance-feed'); 
+        const maintenancePauseInput = document.getElementById('maintenance-pause'); 
 
         const blowerManualControlsDiv = document.getElementById('blower-manual-controls');
         const blowerManualToggle = document.getElementById('blower-manual-toggle');
@@ -615,7 +615,7 @@
         const burnerHoursDisplay = document.getElementById('burner-hours'); 
         const estimatedCostDisplay = document.getElementById('estimated-cost'); 
         const pelletPriceInput = document.getElementById('pellet-price');
-        const pelletConsumptionInput = document.getElementById('pellet-consumption'); // Ten jest disabled, ale warto go mieć
+        const pelletConsumptionInput = document.getElementById('pellet-consumption'); 
         const totalCalculatedCost = document.getElementById('total-calculated-cost'); 
         const efficiencyFill = document.getElementById('efficiency-fill');
         const efficiencyLabel = document.getElementById('efficiency-label');
@@ -637,7 +637,7 @@
         const chartContainerTemp = document.getElementById('chart-container-temp');
         const chartContainerConsumption = document.getElementById('chart-container-consumption');
         const chartContainerDailyConsumption = document.getElementById('chart-container-daily-consumption');
-        const chartContainerMonthlyConsumption = document.getElementById('chart-container-monthly-consumption');
+        const chartContainerMonthlyConsumption = document.getElementById('monthly-consumption-chart'); // Corrected ID
         const chartContainerYearlyConsumption = document.getElementById('chart-container-yearly-consumption');
         const chartContainerGlobalConsumption = document.getElementById('global-consumption-chart');
         const historyRangeButtons = document.querySelectorAll('.history-btn');
@@ -1047,7 +1047,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { type: 'time', time: { unit: 'minute', tooltipFormat: 'yyyy-MM-dd HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy', year: 'yyyy' } }, title: { display: true, text: 'Czas', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { type: 'time', time: { unit: 'minute', tooltipFormat: 'yyyy-MM-dd HH:mm:ss', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy', year: 'yyyy' } }, title: { display: true, text: 'Czas', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+,
                         y: { title: { display: true, text: 'Zużycie (kg/h)', color: 'white' }, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.1)' } }
                     },
                     plugins: {
@@ -1266,7 +1267,7 @@
                     if (mqttStatusText) mqttStatusText.textContent = "Brak połączenia";
                     if (mqttStatusIndicator) {
                         mqttStatusIndicator.classList.remove('connected');
-                        mqttStatusIndicator.classList.add('mqtt-disconnected');
+                        mqttStatusIndicator.classList.add('disconnected');
                     }
                 }
             } else { 
