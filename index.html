@@ -1426,7 +1426,7 @@
             });
         }
         // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
-        // const maintenanceFeedInput = document.getElementById('maintenance-feed'); // USUNIĘTO
+        // const maintenanceFeedInput = document.getElementById('maintenance-feed'); // USUNIĘTO - TEN KOMENTARZ BYŁ ZAKŁADAŁ, ŻE LINIA PONIŻEJ ZOSTAŁA PRZENIESIONA. TERAZ ZABEZPIECZAM SIĘ PRZED NIĄ.
         // const maintenancePauseInput = document.getElementById('maintenance-pause'); // USUNIĘTO
         if (maintenanceFeedInput && maintenancePauseInput) {
             maintenanceFeedInput.addEventListener('change', () => {
@@ -1450,7 +1450,7 @@
             });
         }
         // POPRAWKA: Przeniesiono deklaracje zmiennych na początek, aby uniknąć podwójnej deklaracji
-        // if (blowerWorkPowerSlider && blowerWorkPowerDisplay) { // USUNIĘTO
+        // if (blowerWorkPowerSlider && blowerWorkPowerDisplay) { // USUNIĘTO - PODOBNIE JAK WYŻEJ
         //     const blowerWorkPowerSlider = document.getElementById('blower-work-power-slider'); // USUNIĘTO
         //     const blowerWorkPowerDisplay = document.getElementById('blower-work-power-display'); // USUNIĘTO
         if (blowerWorkPowerSlider && blowerWorkPowerDisplay) {
@@ -1633,7 +1633,7 @@
             const actualConsumptionRate = parseFloat(pelletAmount.textContent || 0); 
             
             const burnerHoursParts = burnerHoursDisplay.textContent.split(':');
-            const burnerHoursTotal = parseInt(burnerHoursParts[0] || 0) * 60 + parseInt(burnerHoursParts[1] || 0); 
+            let burnerHoursTotal = parseInt(burnerHoursParts[0] || 0) * 60 + parseInt(burnerHoursParts[1] || 0); 
 
             if (!isNaN(price) && !isNaN(actualConsumptionRate) && !isNaN(burnerHoursTotal)) {
                 const estimatedCost = price * actualConsumptionRate * burnerHoursTotal / 60; // Dziel przez 60, bo burnerHoursTotal jest w minutach
