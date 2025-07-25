@@ -55,11 +55,11 @@
             <div class="mqtt-form">
                 <div class="mqtt-field">
                     <label for="mqtt-broker">Adres brokera MQTT</label>
-                    <input type="text" id="mqtt-broker" value="192.168.1.25">
+                    <input type="text" id="mqtt-broker" value="broker.emqx.io">
                 </div>
                 <div class="mqtt-field">
                     <label for="mqtt-port">Port</label>
-                    <input type="number" id="mqtt-port" value="80">
+                    <input type="number" id="mqtt-port" value="8084">
                 </div>
                 <div class="mqtt-field">
                     <label for="mqtt-username">Nazwa użytkownika</label>
@@ -536,7 +536,7 @@
     
     <script>
         // Globalne zmienne dla klienta MQTT i tematów
-        let client = null; // Zmieniono nazwę zmiennej, aby uniknąć konfliktu
+        let client = null; 
         let isMqttConnected = false;
 
         // Tematy MQTT - zgodne z tymi w kodzie ESP32
@@ -708,9 +708,9 @@
             const username = mqttUsernameInput.value;
             const password = mqttPasswordInput.value;
 
-            // Zmieniono: Użycie protokołu WebSocket (ws://) dla połączeń lokalnych
-            // Zmieniono: Usunięto ścieżkę "/mqtt", ponieważ lokalne serwery często jej nie używają
-            const mqttUrl = `ws://${broker}:${port}/`; 
+            // Zmieniono: Użycie protokołu WebSocket (wss://) dla połączeń z przeglądarki hostowanej na GitHubie
+            // Port 8084 jest typowy dla WSS w brokerze EMQX.
+            const mqttUrl = `wss://${broker}:${port}/mqtt`; 
             
             appendMqttLog("MQTT", `Próba połączenia z brokerem: ${mqttUrl}`);
 
@@ -1291,6 +1291,14 @@
         }
         
         // --- Event Handlers (BEZ ZMIAN W HTML/STRUKTURZE) ---
+        // Zapewnienie, że element autoCleanToggle istnieje, zanim spróbujemy dodać do niego EventListener
+        const autoCleanToggle = document.getElementById('auto-clean-toggle');
+        if (autoCleanToggle) {
+            autoCleanToggle.addEventListener('change', () => {
+                sendCommand('autoclean', autoCleanToggle.checked);
+            });
+        }
+
         powerBtn.addEventListener('click', () => {
             // Logika ON/OFF jest teraz w updateUI na podstawie danych z ESP32,
             // tutaj tylko wysyłamy komendę 'power' i ESP32 przełącza swój stan
@@ -1316,10 +1324,6 @@
             sendCommand('clean');
         });
         
-        // autoCleanToggle.addEventListener('change', () => { // ZAKOMENTOWANE: Ten element nie istnieje w HTMLu, powodował błąd
-        //     sendCommand('autoclean', autoCleanToggle.checked);
-        // });
-
         updateCleanBtn.addEventListener('click', () => {
             const hours = parseInt(cleanHoursInput.value);
             const minutes = parseInt(cleanMinutesInput.value);
@@ -1525,6 +1529,10 @@
             mqttDisconnectBtn.addEventListener('click', disconnectMQTT);
 
             // Wywołaj funkcję pobierającą historię i stan raz na początku
+            // UWAGA: Te wywołania fetch('/history') i fetch('/state') próbują pobrać dane z lokalnego serwera ESP32
+            // Jeśli ESP32 nie ma zaimplementowanych endpointów /history i /state, to te wywołania zawiodą.
+            // Są one pozostałością po wcześniejszej architekturze.
+            // Jeśli chcesz polegać WYŁĄCZNIE na MQTT, możesz usunąć te bloki fetch.
             fetch('/history')
                 .then(r => r.json())
                 .then(historyData => {
@@ -1534,21 +1542,27 @@
                 .then(r => r.json())
                 .then(data => {
                     updateUI(data);
-                    connectMQTT(); // Połącz z MQTT po pierwszym pobraniu stanu
+                    // connectMQTT(); // Możesz odkomentować, jeśli chcesz auto-połączenie MQTT
                 })
                 .catch(e => {
                     console.error('Błąd pobierania początkowego stanu lub historii:', e);
                     initChart([]); // Wyczyść dane wykresu w przypadku błędu
-                    connectMQTT(); // Nadal spróbuj połączyć się z MQTT
+                    // connectMQTT(); // Nadal spróbuj połączyć się z MQTT, jeśli poprzednie kroki zawiodły
                 });
             
             // Okresowe odświeżanie stanu przez HTTP (jako uzupełnienie/fallback dla MQTT)
+            // To również jest pozostałością po poprzedniej architekturze HTTP.
+            // Jeśli chcesz polegać WYŁĄCZNIE na MQTT, możesz usunąć ten setInterval.
             setInterval(() => {
                 fetch('/state')
                     .then(r => r.json())
                     .then(updateUI)
                     .catch(e => console.error('Błąd aktualizacji stanu HTTP:', e));
             }, 3000); // Co 3 sekundy
+
+            // AUTOMATYCZNE POŁĄCZENIE MQTT PO ZAŁADOWANIU STRONY (dla połączenia internetowego)
+            // Uruchomienie połączenia MQTT po załadowaniu strony
+            connectMQTT();
         });
     </script>
 </body>
